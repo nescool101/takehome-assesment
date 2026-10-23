@@ -1,0 +1,101 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1034.7359999999999 344" width="1034.7359999999999" height="344" style="--bg:#FFFFFF;--fg:#27272A;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  .mono { font-family: 'JetBrains Mono', 'SF Mono', 'Fira Code', ui-monospace, monospace; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+</style>
+<defs>
+</defs>
+<polyline class="er-relationship" data-entity1="OFFER" data-entity2="REGISTRY_ROW" data-cardinality1="one" data-cardinality2="zero-many" data-identifying="true" data-label="targets" points="186.8,232 409.714,232" fill="none" stroke="var(--_line)" stroke-width="1" />
+<polyline class="er-relationship" data-entity1="REGISTRY_ROW" data-entity2="DECISION" data-cardinality1="one" data-cardinality2="zero-many" data-identifying="true" data-label="audit" points="622.514,232 834.736,232" fill="none" stroke="var(--_line)" stroke-width="1" />
+<g class="entity" data-id="OFFER" data-label="OFFER">
+  <rect x="40" y="171" width="146.8" height="122" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <rect x="40" y="171" width="146.8" height="34" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="113.4" y="188" text-anchor="middle" font-size="13" font-weight="700" fill="var(--_text)" dy="4.55">OFFER</text>
+  <line x1="40" y1="205" x2="186.8" y2="205" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="48" y="216" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">string</tspan></text>
+  <text x="178.8" y="216" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">offerId</tspan></text>
+  <text x="48" y="238" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">string</tspan></text>
+  <text x="178.8" y="238" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">templateId</tspan></text>
+  <text x="48" y="260" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">string</tspan></text>
+  <text x="178.8" y="260" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">version</tspan></text>
+  <text x="48" y="282" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">bool</tspan></text>
+  <text x="178.8" y="282" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">withdrawn</tspan></text>
+</g>
+<g class="entity" data-id="REGISTRY_ROW" data-label="REGISTRY_ROW">
+  <rect x="409.714" y="160" width="212.79999999999998" height="144" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <rect x="409.714" y="160" width="212.79999999999998" height="34" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="516.114" y="177" text-anchor="middle" font-size="13" font-weight="700" fill="var(--_text)" dy="4.55">REGISTRY_ROW</text>
+  <line x1="409.714" y1="194" x2="622.514" y2="194" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="417.714" y="205" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">string</tspan></text>
+  <text x="614.514" y="205" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">engagementId</tspan></text>
+  <text x="417.714" y="227" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">string</tspan></text>
+  <text x="614.514" y="227" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">firmId</tspan></text>
+  <text x="417.714" y="249" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">string</tspan></text>
+  <text x="614.514" y="249" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">templateId</tspan></text>
+  <text x="417.714" y="271" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">string</tspan></text>
+  <text x="614.514" y="271" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">pinnedVersion</tspan></text>
+  <text x="417.714" y="293" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">string</tspan></text>
+  <text x="614.514" y="293" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">declinedChangeHashes</tspan></text>
+</g>
+<g class="entity" data-id="DECISION" data-label="DECISION">
+  <rect x="834.736" y="160" width="160" height="144" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <rect x="834.736" y="160" width="160" height="34" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="914.736" y="177" text-anchor="middle" font-size="13" font-weight="700" fill="var(--_text)" dy="4.55">DECISION</text>
+  <line x1="834.736" y1="194" x2="994.736" y2="194" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="842.736" y="205" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">string</tspan></text>
+  <text x="986.736" y="205" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">engagementId</tspan></text>
+  <text x="842.736" y="227" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">string</tspan></text>
+  <text x="986.736" y="227" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">decidedAt</tspan></text>
+  <text x="842.736" y="249" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">string</tspan></text>
+  <text x="986.736" y="249" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">action</tspan></text>
+  <text x="842.736" y="271" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">string</tspan></text>
+  <text x="986.736" y="271" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">versionPair</tspan></text>
+  <text x="842.736" y="293" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">string</tspan></text>
+  <text x="986.736" y="293" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">summaryHash</tspan></text>
+</g>
+<g class="entity" data-id="IDEMPOTENCY" data-label="IDEMPOTENCY">
+  <rect x="40" y="40" width="140" height="100" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <rect x="40" y="40" width="140" height="34" rx="0" ry="0" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="110" y="57" text-anchor="middle" font-size="13" font-weight="700" fill="var(--_text)" dy="4.55">IDEMPOTENCY</text>
+  <line x1="40" y1="74" x2="180" y2="74" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="48" y="85" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">string</tspan></text>
+  <text x="172" y="85" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">key</tspan></text>
+  <text x="48" y="107" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">string</tspan></text>
+  <text x="172" y="107" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">state</tspan></text>
+  <text x="48" y="129" class="mono" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-muted)">number</tspan></text>
+  <text x="172" y="129" class="mono" text-anchor="end" dy="0.35em" font-size="11" font-weight="400"><tspan fill="var(--_text-sec)">exp</tspan></text>
+</g>
+<line x1="190.8" y1="226" x2="190.8" y2="238" stroke="var(--_line)" stroke-width="1.25" />
+<line x1="194.8" y1="226" x2="194.8" y2="238" stroke="var(--_line)" stroke-width="1.25" />
+<line x1="405.714" y1="239" x2="393.714" y2="232" stroke="var(--_line)" stroke-width="1.25" />
+<line x1="405.714" y1="232" x2="393.714" y2="232" stroke="var(--_line)" stroke-width="1.25" />
+<line x1="405.714" y1="225" x2="393.714" y2="232" stroke="var(--_line)" stroke-width="1.25" />
+<circle cx="389.714" cy="232" r="4" fill="var(--bg)" stroke="var(--_line)" stroke-width="1.25" />
+<line x1="626.514" y1="226" x2="626.514" y2="238" stroke="var(--_line)" stroke-width="1.25" />
+<line x1="630.514" y1="226" x2="630.514" y2="238" stroke="var(--_line)" stroke-width="1.25" />
+<line x1="830.736" y1="239" x2="818.736" y2="232" stroke="var(--_line)" stroke-width="1.25" />
+<line x1="830.736" y1="232" x2="818.736" y2="232" stroke="var(--_line)" stroke-width="1.25" />
+<line x1="830.736" y1="225" x2="818.736" y2="232" stroke="var(--_line)" stroke-width="1.25" />
+<circle cx="814.736" cy="232" r="4" fill="var(--bg)" stroke="var(--_line)" stroke-width="1.25" />
+<rect x="276.8" y="221.85" width="42.91400000000001" height="20.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="298.257" y="232" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">targets</text>
+<rect x="712.514" y="221.85" width="32.221999999999994" height="20.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="0.5" />
+<text x="728.625" y="232" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">audit</text>
+</svg>

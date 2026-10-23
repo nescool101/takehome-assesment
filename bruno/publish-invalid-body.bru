@@ -1,0 +1,18 @@
+meta {
+  name: publish invalid body
+  seq: 3
+}
+
+post {
+  url: {{base}}/admin/publishes
+  body: json
+  auth: none
+}
+
+body:json {
+  {}
+}
+
+assert {
+  res.status: eq 400
+}

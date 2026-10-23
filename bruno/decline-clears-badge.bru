@@ -1,0 +1,19 @@
+meta {
+  name: decline clears badge
+  seq: 6
+}
+
+post {
+  url: {{base}}/engagements/bru1/decision
+  body: json
+  auth: none
+}
+
+body:json {
+  {"action":"decline"}
+}
+
+assert {
+  res.status: eq 200
+  res.body.pending: eq false
+}

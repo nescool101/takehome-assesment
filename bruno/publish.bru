@@ -1,0 +1,23 @@
+meta {
+  name: publish
+  seq: 2
+}
+
+post {
+  url: {{base}}/admin/publishes
+  body: json
+  auth: none
+}
+
+body:json {
+  {"templateId":"tpl-bruno","version":"v{{$timestamp}}","engagements":[{"id":"bru1","firmId":"f1"},{"id":"bru2","firmId":"f1"}]}
+}
+
+assert {
+  res.status: eq 202
+  res.body.enqueued: eq 2
+}
+
+script:post-response {
+  bru.setVar("offerId", res.body.offerId);
+}

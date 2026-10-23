@@ -1,0 +1,134 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 965.1515000000002 475.3" width="965.1515000000002" height="475.3" style="--bg:#FFFFFF;--fg:#27272A;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+</style>
+<defs>
+  <marker id="arrowhead" markerWidth="8" markerHeight="5" refX="7" refY="2.5" orient="auto">
+    <polygon points="0 0, 8 2.5, 0 5" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="arrowhead-start" markerWidth="8" markerHeight="5" refX="1" refY="2.5" orient="auto-start-reverse">
+    <polygon points="8 0, 0 2.5, 8 5" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<polyline class="edge" data-from="_start" data-to="Queued" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="publish" points="402.2925,201.65 402.2925,310.40000000000003 511.1549,310.40000000000003 511.1549,310.40000000000003" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Queued" data-to="InProgress" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="worker begins" points="528.7333,310.40000000000003 528.7333,298.40000000000003 483.2925,298.40000000000003 483.2925,242.10000000000002 584.8832833333333,242.10000000000002 584.8832833333333,76.9" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="InProgress" data-to="Pending" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="load ok" points="566.5296166666666,76.9 566.5296166666666,88.9 201.31999999999994,88.9 201.31999999999994,173.65" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="InProgress" data-to="Queued" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="transient failure (retry)" points="603.23695,76.9 603.23695,242.10000000000002 591.7525,242.10000000000002 591.7525,298.40000000000003 546.3117,298.40000000000003 546.3117,310.40000000000003" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="InProgress" data-to="Deferred" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="firm cap or breaker open" points="621.5906166666666,76.9 621.5906166666666,112.9 724.0975000000001,112.9 724.0975000000001,173.65" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Deferred" data-to="Queued" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="redelivered" points="724.0975000000001,210.55000000000004 724.0975000000001,310.40000000000003 563.8901000000001,310.40000000000003 563.8901000000001,310.40000000000003" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="InProgress" data-to="Failed" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="fatal or retries exhausted" points="639.9442833333333,76.9 639.9442833333333,88.90000000000003 861.9835000000002,88.90000000000003 861.9835000000002,173.65" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Failed" data-to="_end" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="861.9835000000002,210.54999999999998 861.9835000000002,254.10000000000002" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Pending" data-to="Applied" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="apply" points="178.60599999999988,210.55000000000004 178.60599999999988,218.10000000000002 83.20500000000004,218.10000000000002 83.20500000000004,310.40000000000003" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Pending" data-to="Declined" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="decline" points="201.31999999999994,210.55000000000004 201.31999999999994,310.40000000000003" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Pending" data-to="Withdrawn" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="offer withdrawn" points="224.034,210.55000000000004 224.034,218.10000000000002 327.9565,218.10000000000002 327.9565,310.40000000000003" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Applied" data-to="_end2" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="83.20500000000004,347.3 83.20500000000004,395.3" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Declined" data-to="_end3" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="201.31999999999994,347.3 201.32000000000005,395.3" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Withdrawn" data-to="_end4" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="327.9565,347.3 327.9565,395.3" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<g class="edge-label" data-from="_start" data-to="Queued" data-label="publish">
+  <rect x="375.7925" y="225.10000000000002" width="52.102" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="401.8435" y="240.25000000000003" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">publish</text>
+</g>
+<g class="edge-label" data-from="Queued" data-to="InProgress" data-label="worker begins">
+  <rect x="440.2925" y="249.1" width="85.96000000000001" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="483.27250000000004" y="264.25" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">worker begins</text>
+</g>
+<g class="edge-label" data-from="InProgress" data-to="Pending" data-label="load ok">
+  <rect x="175.31999999999994" y="95.9" width="51.507999999999996" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="201.07399999999993" y="111.05000000000001" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">load ok</text>
+</g>
+<g class="edge-label" data-from="InProgress" data-to="Queued" data-label="transient failure (retry)">
+  <rect x="530.2525" y="249.1" width="122.19400000000005" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="591.3495" y="264.25" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">transient failure (retry)</text>
+</g>
+<g class="edge-label" data-from="InProgress" data-to="Deferred" data-label="firm cap or breaker open">
+  <rect x="657.5975000000001" y="119.9" width="132.88600000000002" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="724.0405000000001" y="135.05" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">firm cap or breaker open</text>
+</g>
+<g class="edge-label" data-from="Deferred" data-to="Queued" data-label="redelivered">
+  <rect x="687.0975000000001" y="273.1" width="73.486" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="723.8405000000001" y="288.25" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">redelivered</text>
+</g>
+<g class="edge-label" data-from="InProgress" data-to="Failed" data-label="fatal or retries exhausted">
+  <rect x="794.4835" y="95.90000000000003" width="134.668" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="861.8175000000001" y="111.05000000000004" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">fatal or retries exhausted</text>
+</g>
+<g class="edge-label" data-from="Pending" data-to="Applied" data-label="apply">
+  <rect x="61.20500000000004" y="225.10000000000002" width="43.786" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="83.09800000000004" y="240.25000000000003" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">apply</text>
+</g>
+<g class="edge-label" data-from="Pending" data-to="Declined" data-label="decline">
+  <rect x="174.82000000000005" y="249.1" width="52.102" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="200.87100000000004" y="264.25" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">decline</text>
+</g>
+<g class="edge-label" data-from="Pending" data-to="Withdrawn" data-label="offer withdrawn">
+  <rect x="283.4565" y="225.10000000000002" width="88.33600000000001" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="327.6245" y="240.25000000000003" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">offer withdrawn</text>
+</g>
+<g class="node" data-id="_start" data-label="" data-shape="state-start">
+  <circle cx="402.2925" cy="187.65" r="12" fill="var(--_text)" stroke="none" />
+</g>
+<g class="node" data-id="Queued" data-label="Queued" data-shape="rounded">
+  <rect x="493.5765" y="310.40000000000003" width="87.892" height="36.900000000000006" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="537.5225" y="328.85" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Queued</text>
+</g>
+<g class="node" data-id="InProgress" data-label="InProgress" data-shape="rounded">
+  <rect x="548.17595" y="40" width="110.122" height="36.900000000000006" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="603.23695" y="58.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">InProgress</text>
+</g>
+<g class="node" data-id="Pending" data-label="Pending" data-shape="rounded">
+  <rect x="155.89199999999994" y="173.65" width="90.856" height="36.900000000000006" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="201.31999999999994" y="192.10000000000002" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Pending</text>
+</g>
+<g class="node" data-id="Deferred" data-label="Deferred" data-shape="rounded">
+  <rect x="676.4465000000001" y="173.65" width="95.30199999999999" height="36.900000000000006" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="724.0975000000001" y="192.10000000000002" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Deferred</text>
+</g>
+<g class="node" data-id="Failed" data-label="Failed" data-shape="rounded">
+  <rect x="822.4835000000002" y="173.65" width="79" height="36.900000000000006" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="861.9835000000002" y="192.10000000000002" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Failed</text>
+</g>
+<g class="node" data-id="_end" data-label="" data-shape="state-end">
+  <circle cx="861.9835000000002" cy="268.1" r="12" fill="none" stroke="var(--_text)" stroke-width="1.5" />
+  <circle cx="861.9835000000002" cy="268.1" r="8" fill="var(--_text)" stroke="none" />
+</g>
+<g class="node" data-id="Applied" data-label="Applied" data-shape="rounded">
+  <rect x="40" y="310.40000000000003" width="86.41" height="36.900000000000006" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="83.205" y="328.85" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Applied</text>
+</g>
+<g class="node" data-id="Declined" data-label="Declined" data-shape="rounded">
+  <rect x="154.40999999999997" y="310.40000000000003" width="93.82" height="36.900000000000006" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="201.31999999999996" y="328.85" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Declined</text>
+</g>
+<g class="node" data-id="Withdrawn" data-label="Withdrawn" data-shape="rounded">
+  <rect x="276.23" y="310.40000000000003" width="103.453" height="36.900000000000006" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="327.9565" y="328.85" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Withdrawn</text>
+</g>
+<g class="node" data-id="_end2" data-label="" data-shape="state-end">
+  <circle cx="83.20500000000004" cy="409.3" r="12" fill="none" stroke="var(--_text)" stroke-width="1.5" />
+  <circle cx="83.20500000000004" cy="409.3" r="8" fill="var(--_text)" stroke="none" />
+</g>
+<g class="node" data-id="_end3" data-label="" data-shape="state-end">
+  <circle cx="201.32000000000005" cy="409.3" r="12" fill="none" stroke="var(--_text)" stroke-width="1.5" />
+  <circle cx="201.32000000000005" cy="409.3" r="8" fill="var(--_text)" stroke="none" />
+</g>
+<g class="node" data-id="_end4" data-label="" data-shape="state-end">
+  <circle cx="327.9565" cy="409.3" r="12" fill="none" stroke="var(--_text)" stroke-width="1.5" />
+  <circle cx="327.9565" cy="409.3" r="8" fill="var(--_text)" stroke="none" />
+</g>
+</svg>

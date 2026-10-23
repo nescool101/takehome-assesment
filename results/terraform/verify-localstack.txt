@@ -1,0 +1,12 @@
+== us-east-1 dynamodb tables
+{"TableNames": ["us-checkpoints", "us-decisions", "us-offers", "us-registry"]}
+== us-east-1 sqs queues
+{"ListQueuesResponse": {"ListQueuesResult": {"QueueUrl": ["http://sqs.us-east-1.localhost.localstack.cloud:4566/000000000000/us-fanout-dlq", "http://sqs.us-east-1.localhost.localstack.cloud:4566/000000000000/us-fanout"]}, "ResponseMetadata": {"RequestId": "62dece95-f38b-47de-9722-c4af3a84cb45"}}}
+== eu-west-1 dynamodb tables
+{"TableNames": ["eu-checkpoints", "eu-decisions", "eu-offers", "eu-registry"]}
+== eu-west-1 sqs queues
+{"ListQueuesResponse": {"ListQueuesResult": {"QueueUrl": ["http://sqs.eu-west-1.localhost.localstack.cloud:4566/000000000000/eu-fanout-dlq", "http://sqs.eu-west-1.localhost.localstack.cloud:4566/000000000000/eu-fanout"]}, "ResponseMetadata": {"RequestId": "4ff042f8-f583-40c3-8116-fc465a03d541"}}}
+== ca-central-1 dynamodb tables
+{"TableNames": ["ca-checkpoints", "ca-decisions", "ca-offers", "ca-registry"]}
+== ca-central-1 sqs queues
+{"ListQueuesResponse": {"ListQueuesResult": {"QueueUrl": ["http://sqs.ca-central-1.localhost.localstack.cloud:4566/000000000000/ca-fanout-dlq", "http://sqs.ca-central-1.localhost.localstack.cloud:4566/000000000000/ca-fanout"]}, "ResponseMetadata": {"RequestId": "4fc6198b-895c-4ac2-b90a-a588298766d1"}}}

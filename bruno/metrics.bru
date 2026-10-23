@@ -1,0 +1,15 @@
+meta {
+  name: metrics
+  seq: 9
+}
+
+get {
+  url: {{base}}/metrics
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+  res.body.dlq.visible: eq 0
+}

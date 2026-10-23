@@ -1,0 +1,14 @@
+meta {
+  name: withdraw
+  seq: 7
+}
+
+post {
+  url: {{base}}/admin/offers/{{offerId}}/withdraw
+  body: none
+  auth: none
+}
+
+assert {
+  res.body.withdrawn: eq true
+}

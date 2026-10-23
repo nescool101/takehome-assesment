@@ -1,0 +1,117 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1156.161 600" width="1156.161" height="600" style="--bg:#FFFFFF;--fg:#27272A;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+</style>
+<defs>
+  <marker id="seq-arrow" markerWidth="8" markerHeight="5" refX="8" refY="2.5" orient="auto-start-reverse">
+    <polygon points="0 0, 8 2.5, 0 5" fill="var(--_arrow)" />
+  </marker>
+  <marker id="seq-arrow-open" markerWidth="8" markerHeight="5" refX="8" refY="2.5" orient="auto-start-reverse">
+    <polyline points="0 0, 8 2.5, 0 5" fill="none" stroke="var(--_arrow)" stroke-width="1" />
+  </marker>
+</defs>
+<line class="lifeline" data-actor="P" x1="75.874" y1="70" x2="75.874" y2="570" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line class="lifeline" data-actor="G" x1="215.874" y1="70" x2="215.874" y2="570" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line class="lifeline" data-actor="A" x1="355.874" y1="70" x2="355.874" y2="570" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line class="lifeline" data-actor="R" x1="495.874" y1="70" x2="495.874" y2="570" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line class="lifeline" data-actor="Q" x1="635.874" y1="70" x2="635.874" y2="570" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line class="lifeline" data-actor="W" x1="775.874" y1="70" x2="775.874" y2="570" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line class="lifeline" data-actor="D" x1="931.0175" y1="70" x2="931.0175" y2="570" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line class="lifeline" data-actor="U" x1="1086.161" y1="70" x2="1086.161" y2="570" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<g class="message" data-from="P" data-to="G" data-label="POST /admin/publishes" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="75.874" y1="90" x2="215.874" y2="90" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="145.874" y="80" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">POST /admin/publishes</text>
+</g>
+<g class="message" data-from="G" data-to="A" data-label="key ok, within throttle" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="215.874" y1="130" x2="355.874" y2="130" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="285.874" y="120" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">key ok, within throttle</text>
+</g>
+<g class="message" data-from="A" data-to="R" data-label="engagements on older versions" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="355.874" y1="170" x2="495.874" y2="170" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="425.874" y="160" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">engagements on older versions</text>
+</g>
+<g class="message" data-from="A" data-to="Q" data-label="batch send jobs" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="355.874" y1="210" x2="635.874" y2="210" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="495.874" y="200" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">batch send jobs</text>
+</g>
+<g class="message" data-from="A" data-to="P" data-label="202 offerId, enqueued" data-line-style="dashed" data-arrow-head="filled" data-self="false">
+  <line x1="355.874" y1="250" x2="75.874" y2="250" stroke="var(--_line)" stroke-width="1" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+  <text x="215.87400000000002" y="240" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">202 offerId, enqueued</text>
+</g>
+<g class="message" data-from="Q" data-to="W" data-label="receive up to free permits" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="635.874" y1="290" x2="775.874" y2="290" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="705.874" y="280" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">receive up to free permits</text>
+</g>
+<g class="message" data-from="W" data-to="R" data-label="conditional put (idempotency)" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="775.874" y1="330" x2="495.874" y2="330" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="635.874" y="320" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">conditional put (idempotency)</text>
+</g>
+<g class="message" data-from="W" data-to="D" data-label="load (about 1 min, permit held)" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="775.874" y1="370" x2="931.0175" y2="370" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="853.4457500000001" y="360" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">load (about 1 min, permit held)</text>
+</g>
+<g class="message" data-from="D" data-to="W" data-label="ok" data-line-style="dashed" data-arrow-head="filled" data-self="false">
+  <line x1="931.0175" y1="410" x2="775.874" y2="410" stroke="var(--_line)" stroke-width="1" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+  <text x="853.4457500000001" y="400" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">ok</text>
+</g>
+<g class="message" data-from="W" data-to="R" data-label="pending flag done" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="775.874" y1="450" x2="495.874" y2="450" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="635.874" y="440" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">pending flag done</text>
+</g>
+<g class="message" data-from="U" data-to="A" data-label="GET engagement status" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="1086.161" y1="490" x2="355.874" y2="490" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="721.0175" y="480" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">GET engagement status</text>
+</g>
+<g class="message" data-from="A" data-to="U" data-label="pending badge + summary" data-line-style="dashed" data-arrow-head="filled" data-self="false">
+  <line x1="355.874" y1="530" x2="1086.161" y2="530" stroke="var(--_line)" stroke-width="1" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+  <text x="721.0175" y="520" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">pending badge + summary</text>
+</g>
+<g class="actor" data-id="P" data-label="Publisher" data-type="participant">
+  <rect x="30" y="30" width="91.74799999999999" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="75.874" y="50" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">Publisher</text>
+</g>
+<g class="actor" data-id="G" data-label="API Gateway" data-type="participant">
+  <rect x="162.21949999999998" y="30" width="107.30900000000001" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="215.874" y="50" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">API Gateway</text>
+</g>
+<g class="actor" data-id="A" data-label="Ops API" data-type="participant">
+  <rect x="315.5575" y="30" width="80.63300000000001" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="355.874" y="50" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">Ops API</text>
+</g>
+<g class="actor" data-id="R" data-label="Registry" data-type="participant">
+  <rect x="453.70500000000004" y="30" width="84.338" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="495.874" y="50" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">Registry</text>
+</g>
+<g class="actor" data-id="Q" data-label="SQS" data-type="participant">
+  <rect x="595.874" y="30" width="80" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="635.874" y="50" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">SQS</text>
+</g>
+<g class="actor" data-id="W" data-label="Worker" data-type="participant">
+  <rect x="735.874" y="30" width="80" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="775.874" y="50" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">Worker</text>
+</g>
+<g class="actor" data-id="D" data-label="Engagement system" data-type="participant">
+  <rect x="855.874" y="30" width="150.287" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="931.0175" y="50" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">Engagement system</text>
+</g>
+<g class="actor" data-id="U" data-label="UI" data-type="participant">
+  <rect x="1046.161" y="30" width="80" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="1086.161" y="50" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">UI</text>
+</g>
+</svg>

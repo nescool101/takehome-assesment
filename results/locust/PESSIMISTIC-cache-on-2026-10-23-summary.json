@@ -1,0 +1,34 @@
+{
+ "scenario": "PESSIMISTIC",
+ "cacheEnabled": true,
+ "catalogReads": 222,
+ "date": "2026-10-23",
+ "permits": 50,
+ "simLatencyMs": 300,
+ "jobs": 4000,
+ "offers": 5,
+ "measuredDrainSeconds": 65.12,
+ "littleLawPredictedSeconds": 24.0,
+ "measuredOverPredicted": 2.71,
+ "medianFirmBadgeSeconds": {
+  "tpl-0@v1792781407": 1.98,
+  "tpl-1@v1792781407": 7.76,
+  "tpl-2@v1792781407": 17.12,
+  "tpl-3@v1792781407": 24.22,
+  "tpl-4@v1792781407": 31.89
+ },
+ "peakConcurrent": 50,
+ "peakWithinPermits": true,
+ "duplicateDownstreamCalls": 0,
+ "dlq": {
+  "visible": 0,
+  "inFlight": 0
+ },
+ "extrapolatedRealDrain": {
+  "jobs": 202000,
+  "seconds": 480000,
+  "hours": 133.3,
+  "note": "full-scale burst at real 60s load, same permits and per-firm cap"
+ },
+ "pass": true
+}

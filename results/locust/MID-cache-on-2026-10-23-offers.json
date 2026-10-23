@@ -1,0 +1,25 @@
+{
+ "t0": 1792781295.503403,
+ "cfg": {
+  "scenario": "MID",
+  "budget": "MID",
+  "permits": 100,
+  "simLatencyMs": 300,
+  "loadSeconds": 60,
+  "activeEngagements": 1200000,
+  "firms": 6000,
+  "medianPerFirm": 40,
+  "maxPerFirm": 40000,
+  "cacheEnabled": true
+ },
+ "offers": [
+  {
+   "offerId": "tpl-0@v1792781295",
+   "jobs": 800,
+   "giant": 400,
+   "probe": "1792781295-0-f0-0",
+   "badgeAt": 3.4119629859924316,
+   "doneAt": 12.052451133728027
+  }
+ ]
+}
