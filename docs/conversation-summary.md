@@ -1,6 +1,6 @@
 # Conversation summary (this working session)
 
-Written by the assistant from the session, not a verbatim transcript. Dates are 2026-10-23. For where AI helped and was wrong, see `ai-usage-notes.md`; for failures, `issues-log.md`.
+Written by the assistant from the session. The chat text itself (without tool output) is in `session-history/`. Dates are 2026-10-23. For where AI helped and was wrong, see `ai-usage-notes.md`; for failures, `issues-log.md`.
 
 ## What the author asked for, in order
 1. Read the four earlier AI conversations (Kimi, Gemini, Claude, Z.ai) in plan mode, show the plan, and record in the README the decisions taken from all four.

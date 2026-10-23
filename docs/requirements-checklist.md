@@ -37,7 +37,7 @@ Source: the assignment PDF (`LLMHistory/Staff_Java_Developer_-_Take-Home_Test 2 
 |---|---|---|
 | 1. Design document (PDF or Markdown) | `docs/design-doc.pdf`, `docs/design-doc.md` | Done |
 | 2. Code for Part 2 with a short README | `backend/`, `backend/README.md` | Done |
-| 3. (Optional) AI session history | `LLMHistory/` (earlier assistants), `docs/ai-usage-notes.md`, `docs/conversation-summary.md`, `docs/issues-log.md` | Done; the summaries are written by the assistant, not verbatim transcripts |
+| 3. (Optional) AI session history | `LLMHistory/` (earlier assistants), `docs/session-history/` (text of this session's chat: user and assistant messages, tool output omitted), `docs/ai-usage-notes.md`, `docs/conversation-summary.md`, `docs/issues-log.md` | Done; the notes and summary are written by the assistant, the session history is the chat text itself |
 | 4. Diagrams | `docs/diagrams/*.mmd` (sources), `docs/diagrams/out/` (SVG + PNG) | Done |
 
 ## AI usage questions the reviewers will ask
