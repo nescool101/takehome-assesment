@@ -1,0 +1,28 @@
+erDiagram
+  OFFER ||--o{ REGISTRY_ROW : "targets"
+  OFFER {
+    string offerId
+    string templateId
+    string version
+    bool withdrawn
+  }
+  REGISTRY_ROW ||--o{ DECISION : "audit"
+  REGISTRY_ROW {
+    string engagementId
+    string firmId
+    string templateId
+    string pinnedVersion
+    string declinedChangeHashes
+  }
+  DECISION {
+    string engagementId
+    string decidedAt
+    string action
+    string versionPair
+    string summaryHash
+  }
+  IDEMPOTENCY {
+    string key
+    string state
+    number exp
+  }

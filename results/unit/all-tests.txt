@@ -1,0 +1,5 @@
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.041 s -- in com.caseware.fanout.config.AppConfigTest
+[INFO] Tests run: 10, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.004 s -- in com.caseware.fanout.worker.FanOutWorkerTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.014 s -- in com.caseware.fanout.worker.ArchitectureTest
+[INFO] Tests run: 16, Failures: 0, Errors: 0, Skipped: 0
+[INFO] BUILD SUCCESS

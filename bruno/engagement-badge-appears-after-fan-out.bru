@@ -1,0 +1,19 @@
+meta {
+  name: engagement badge appears after fan-out
+  seq: 5
+}
+
+get {
+  url: {{base}}/engagements/bru1/status
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+  res.body.pending: eq true
+}
+
+script:pre-request {
+  await bru.sleep(1500);
+}

@@ -1,0 +1,21 @@
+sequenceDiagram
+  participant P as Publisher
+  participant G as API Gateway
+  participant A as Ops API
+  participant R as Registry
+  participant Q as SQS
+  participant W as Worker
+  participant D as Engagement system
+  participant U as UI
+  P->>G: POST /admin/publishes
+  G->>A: key ok, within throttle
+  A->>R: engagements on older versions
+  A->>Q: batch send jobs
+  A-->>P: 202 offerId, enqueued
+  Q->>W: receive up to free permits
+  W->>R: conditional put (idempotency)
+  W->>D: load (about 1 min, permit held)
+  D-->>W: ok
+  W->>R: pending flag done
+  U->>A: GET engagement status
+  A-->>U: pending badge + summary

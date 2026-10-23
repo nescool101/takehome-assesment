@@ -1,0 +1,14 @@
+meta {
+  name: withdrawn offer shows no badge
+  seq: 8
+}
+
+get {
+  url: {{base}}/engagements/bru2/status
+  body: none
+  auth: none
+}
+
+assert {
+  res.body.pending: eq false
+}

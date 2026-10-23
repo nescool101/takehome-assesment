@@ -1,0 +1,1 @@
+{ "name": "diagrams", "private": true, "type": "module", "scripts": { "render": "node render.mjs" }, "dependencies": { "beautiful-mermaid": "1.1.3" } }

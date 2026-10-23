@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.caseware.fanout.worker.LocalStackTest
+-------------------------------------------------------------------------------
+Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 4.202 s -- in com.caseware.fanout.worker.LocalStackTest

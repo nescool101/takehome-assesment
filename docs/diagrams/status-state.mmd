@@ -1,0 +1,15 @@
+stateDiagram-v2
+  [*] --> Queued: publish
+  Queued --> InProgress: worker begins
+  InProgress --> Pending: load ok
+  InProgress --> Queued: transient failure (retry)
+  InProgress --> Deferred: firm cap or breaker open
+  Deferred --> Queued: redelivered
+  InProgress --> Failed: fatal or retries exhausted
+  Failed --> [*]
+  Pending --> Applied: apply
+  Pending --> Declined: decline
+  Pending --> Withdrawn: offer withdrawn
+  Applied --> [*]
+  Declined --> [*]
+  Withdrawn --> [*]

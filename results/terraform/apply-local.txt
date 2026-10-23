@@ -1,0 +1,90 @@
+module.us.aws_dynamodb_table.decisions: Refreshing state... [id=us-decisions]
+module.us.aws_dynamodb_table.registry: Refreshing state... [id=us-registry]
+module.us.aws_dynamodb_table.offers: Refreshing state... [id=us-offers]
+module.us.aws_dynamodb_table.checkpoints: Refreshing state... [id=us-checkpoints]
+module.us.aws_sqs_queue.dlq: Refreshing state... [id=http://sqs.us-east-1.localhost.localstack.cloud:4566/000000000000/us-fanout-dlq]
+module.us.aws_sqs_queue.work: Refreshing state... [id=http://sqs.us-east-1.localhost.localstack.cloud:4566/000000000000/us-fanout]
+module.eu.aws_sqs_queue.dlq: Refreshing state... [id=http://sqs.eu-west-1.localhost.localstack.cloud:4566/000000000000/eu-fanout-dlq]
+module.eu.aws_dynamodb_table.offers: Refreshing state... [id=eu-offers]
+module.eu.aws_dynamodb_table.checkpoints: Refreshing state... [id=eu-checkpoints]
+module.eu.aws_dynamodb_table.decisions: Refreshing state... [id=eu-decisions]
+module.eu.aws_dynamodb_table.registry: Refreshing state... [id=eu-registry]
+module.eu.aws_sqs_queue.work: Refreshing state... [id=http://sqs.eu-west-1.localhost.localstack.cloud:4566/000000000000/eu-fanout]
+module.ca.aws_dynamodb_table.offers: Refreshing state... [id=ca-offers]
+module.ca.aws_dynamodb_table.decisions: Refreshing state... [id=ca-decisions]
+module.ca.aws_sqs_queue.dlq: Refreshing state... [id=http://sqs.ca-central-1.localhost.localstack.cloud:4566/000000000000/ca-fanout-dlq]
+module.ca.aws_dynamodb_table.registry: Refreshing state... [id=ca-registry]
+module.ca.aws_dynamodb_table.checkpoints: Refreshing state... [id=ca-checkpoints]
+module.ca.aws_sqs_queue.work: Refreshing state... [id=http://sqs.ca-central-1.localhost.localstack.cloud:4566/000000000000/ca-fanout]
+
+Terraform used the selected providers to generate the following execution
+plan. Resource actions are indicated with the following symbols:
+  ~ update in-place
+
+Terraform will perform the following actions:
+
+  # module.ca.aws_sqs_queue.work will be updated in-place
+  ~ resource "aws_sqs_queue" "work" {
+        id                                = "http://sqs.ca-central-1.localhost.localstack.cloud:4566/000000000000/ca-fanout"
+        name                              = "ca-fanout"
+      ~ redrive_policy                    = jsonencode(
+          ~ {
+              ~ maxReceiveCount     = 3 -> 20
+                # (1 unchanged attribute hidden)
+            }
+        )
+        tags                              = {}
+        # (18 unchanged attributes hidden)
+    }
+
+  # module.eu.aws_sqs_queue.work will be updated in-place
+  ~ resource "aws_sqs_queue" "work" {
+        id                                = "http://sqs.eu-west-1.localhost.localstack.cloud:4566/000000000000/eu-fanout"
+        name                              = "eu-fanout"
+      ~ redrive_policy                    = jsonencode(
+          ~ {
+              ~ maxReceiveCount     = 3 -> 20
+                # (1 unchanged attribute hidden)
+            }
+        )
+        tags                              = {}
+        # (18 unchanged attributes hidden)
+    }
+
+  # module.us.aws_sqs_queue.work will be updated in-place
+  ~ resource "aws_sqs_queue" "work" {
+        id                                = "http://sqs.us-east-1.localhost.localstack.cloud:4566/000000000000/us-fanout"
+        name                              = "us-fanout"
+      ~ redrive_policy                    = jsonencode(
+          ~ {
+              ~ maxReceiveCount     = 3 -> 20
+                # (1 unchanged attribute hidden)
+            }
+        )
+        tags                              = {}
+        # (18 unchanged attributes hidden)
+    }
+
+Plan: 0 to add, 3 to change, 0 to destroy.
+module.eu.aws_sqs_queue.work: Modifying... [id=http://sqs.eu-west-1.localhost.localstack.cloud:4566/000000000000/eu-fanout]
+module.ca.aws_sqs_queue.work: Modifying... [id=http://sqs.ca-central-1.localhost.localstack.cloud:4566/000000000000/ca-fanout]
+module.us.aws_sqs_queue.work: Modifying... [id=http://sqs.us-east-1.localhost.localstack.cloud:4566/000000000000/us-fanout]
+module.eu.aws_sqs_queue.work: Still modifying... [id=http://sqs.eu-west-1.localhost.localstack.cloud:4566/000000000000/eu-fanout, 00m10s elapsed]
+module.ca.aws_sqs_queue.work: Still modifying... [id=http://sqs.ca-central-1.localhost.localstack.cloud:4566/000000000000/ca-fanout, 00m10s elapsed]
+module.us.aws_sqs_queue.work: Still modifying... [id=http://sqs.us-east-1.localhost.localstack.cloud:4566/000000000000/us-fanout, 00m10s elapsed]
+module.eu.aws_sqs_queue.work: Still modifying... [id=http://sqs.eu-west-1.localhost.localstack.cloud:4566/000000000000/eu-fanout, 00m20s elapsed]
+module.ca.aws_sqs_queue.work: Still modifying... [id=http://sqs.ca-central-1.localhost.localstack.cloud:4566/000000000000/ca-fanout, 00m20s elapsed]
+module.us.aws_sqs_queue.work: Still modifying... [id=http://sqs.us-east-1.localhost.localstack.cloud:4566/000000000000/us-fanout, 00m20s elapsed]
+module.eu.aws_sqs_queue.work: Modifications complete after 25s [id=http://sqs.eu-west-1.localhost.localstack.cloud:4566/000000000000/eu-fanout]
+module.ca.aws_sqs_queue.work: Modifications complete after 25s [id=http://sqs.ca-central-1.localhost.localstack.cloud:4566/000000000000/ca-fanout]
+module.us.aws_sqs_queue.work: Modifications complete after 25s [id=http://sqs.us-east-1.localhost.localstack.cloud:4566/000000000000/us-fanout]
+
+Apply complete! Resources: 0 added, 3 changed, 0 destroyed.
+
+Outputs:
+
+queues = {
+  "ca" = "http://sqs.ca-central-1.localhost.localstack.cloud:4566/000000000000/ca-fanout"
+  "eu" = "http://sqs.eu-west-1.localhost.localstack.cloud:4566/000000000000/eu-fanout"
+  "us" = "http://sqs.us-east-1.localhost.localstack.cloud:4566/000000000000/us-fanout"
+}

@@ -1,0 +1,12 @@
+graph TD
+  UI[Engagement list UI] -->|poll indicator| GW[API Gateway: API key + throttle + quota]
+  Pub[Template publish] --> GW
+  GW --> API[Ops API]
+  API -->|query by template| REG[(Registry per region: DynamoDB)]
+  API -->|batch send jobs| Q[SQS work queue per region]
+  Q --> W[Fan-out worker per region: permits + per-firm cap]
+  W -->|conditional put| IDEM[(Idempotency table)]
+  W -->|1 min call, max permits| DS[Engagement system: other team]
+  W -->|retries exhausted| DLQ[SQS DLQ]
+  W -->|write pending flag| REG
+  CAT[(Global template catalog: versions only)] --> API
