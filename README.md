@@ -4,6 +4,20 @@ Template-update indicator + publish fan-out worker. Full plan: [docs/PLAN.md](do
 
 Layout: `backend/` (Java 21), `frontend/` (static test harness), `infra/` (Terraform + LocalStack), `bruno/` (API tests), `docs/` (design doc, diagrams, AI notes).
 
+## Documentation (start here)
+| Read | What it is |
+|---|---|
+| [docs/design-doc.pdf](docs/design-doc.pdf) / [.md](docs/design-doc.md) | Part 1: the design (4 pages, follows the brief's five sections) |
+| [backend/README.md](backend/README.md) | Part 2: the fan-out worker and its implementation tradeoffs |
+| [docs/requirements-checklist.md](docs/requirements-checklist.md) | Every requirement in the brief vs our solution vs where the evidence is |
+| [docs/diagrams/out/](docs/diagrams/out/) | Architecture, publish sequence, data model, version DAG, status states (sources in `docs/diagrams/*.mmd`) |
+| [results/](results/) | Evidence per layer: unit, integration, terraform, bruno, playwright, locust ([REPORT](results/locust/REPORT.md), [ANALYSIS](results/locust/ANALYSIS.md)) |
+| [docs/PLAN.md](docs/PLAN.md) | Plan and the decisions taken from the four AI sessions, including contradictions found against the brief |
+| [docs/ai-usage-notes.md](docs/ai-usage-notes.md) | Where AI helped, where it was wrong, guidance for engineers, where not to trust it |
+| [docs/conversation-summary.md](docs/conversation-summary.md) and [docs/session-history/](docs/session-history/) | Summary of this working session, and the chat text itself |
+| [docs/issues-log.md](docs/issues-log.md) | Errors we hit and how we resolved them |
+| [RESUME.md](RESUME.md) | State for picking the work up again |
+
 ## Architecture decisions
 
 Reached by cross-checking four AI sessions (Kimi, Gemini, Claude, Z.ai; histories in `LLMHistory/`) against the brief and our own reasoning. Where they agreed, we locked it; where they differed, we chose and say why.
