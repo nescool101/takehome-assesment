@@ -68,6 +68,6 @@ for sc in ("OPTIMISTIC", "MID", "PESSIMISTIC"):
     if k:
         e = runs[k][0]["extrapolatedRealDrain"]
         L.append(f"| {sc} | {e['jobs']:,} | {e['hours']} h ({e['seconds']:,} s) |")
-L += ["", "Raw data: per-run `*-summary.json`, Locust `*_stats.csv`, `*.html`. Re-run with `locust/run.sh` then `summarize.py`."]
+L += ["", "Raw data: per-run `*-summary.json`, Locust `*_stats.csv`, `*.html`. Re-run with `locust/run.sh` then `summarize.py`.", "", "Interpretation, limits and the price/quality recommendation: [ANALYSIS.md](ANALYSIS.md)."]
 open(f"{OUT}/REPORT.md", "w").write("\n".join(L) + "\n")
 print("\n".join(L))

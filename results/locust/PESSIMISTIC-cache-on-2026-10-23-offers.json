@@ -1,0 +1,55 @@
+{
+ "t0": 1792781407.397782,
+ "cfg": {
+  "scenario": "PESSIMISTIC",
+  "budget": "MID",
+  "permits": 50,
+  "simLatencyMs": 300,
+  "loadSeconds": 60,
+  "activeEngagements": 2400000,
+  "firms": 12000,
+  "medianPerFirm": 40,
+  "maxPerFirm": 40000,
+  "cacheEnabled": true
+ },
+ "offers": [
+  {
+   "offerId": "tpl-0@v1792781407",
+   "jobs": 800,
+   "giant": 400,
+   "probe": "1792781407-0-f0-0",
+   "badgeAt": 1.9788520336151123,
+   "doneAt": 22.914130926132202
+  },
+  {
+   "offerId": "tpl-1@v1792781407",
+   "jobs": 800,
+   "giant": 400,
+   "probe": "1792781407-1-f0-0",
+   "badgeAt": 7.755661964416504,
+   "doneAt": 26.942177057266235
+  },
+  {
+   "offerId": "tpl-2@v1792781407",
+   "jobs": 800,
+   "giant": 400,
+   "probe": "1792781407-2-f0-0",
+   "badgeAt": 17.12472701072693,
+   "doneAt": 40.382221937179565
+  },
+  {
+   "offerId": "tpl-3@v1792781407",
+   "jobs": 800,
+   "giant": 400,
+   "probe": "1792781407-3-f0-0",
+   "badgeAt": 24.218355894088745
+  },
+  {
+   "offerId": "tpl-4@v1792781407",
+   "jobs": 800,
+   "giant": 400,
+   "probe": "1792781407-4-f0-0",
+   "badgeAt": 31.89281988143921
+  }
+ ]
+}
