@@ -22,7 +22,7 @@ Side-index registry instead of loading engagements; one registry per region (EU,
 AIs' claims about reading versions without loading; a wrong 67-day figure; retry counted twice, then SQS `ReceiveCount` misused; ECS on LocalStack; broken Bruno files; slow publish (one SQS call per job); a status endpoint doing one DynamoDB read per job; an API stalled by virtual-thread carrier starvation at 200 permits; a load report that capped drain at the run length (fixed by recording completion during the run).
 
 ## How the work ended
-- Load results (6 runs: 3 scenarios x cache off/on) all passed correctness. The cache cut offer reads 94-98% but showed no reliable speed gain and saves cents, so the decision, taken from the numbers, is to ship with it off and not to buy DAX or an API Gateway cache. Evidence: `results/locust/ANALYSIS.md`.
+- Load results (6 runs: 3 scenarios x cache off/on) all passed correctness. The cache cut offer reads 93-98% but showed no reliable speed gain and saves cents, so the decision, taken from the numbers, is to ship with it off and not to buy DAX or an API Gateway cache. Evidence: `results/locust/ANALYSIS.md`.
 - Open limits we chose not to chase (scope was done): EU and Canada workers not run end to end, nothing verified on real AWS, cache A/B is single-run, prices unverified.
 - Commits (no co-author line, as asked): `b882abd`, `635c832`, `1ed8a95` and this summary's commit, on `read-llm-history-docs`. A push to GitHub needs the author's credentials (none on this machine).
 
