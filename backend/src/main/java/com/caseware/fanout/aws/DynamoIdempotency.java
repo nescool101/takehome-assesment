@@ -69,10 +69,32 @@ public class DynamoIdempotency implements IdempotencyStore {
         return done;
     }
 
+    /** DONE + per-offer counter in one transaction: the counter moves exactly once per key, even on redelivery. */
     @Override
     public void done(String key) {
-        ddb.putItem(b -> b.tableName(table).item(Map.of("k", s(key), "state", s("DONE"),
-                "exp", n(Instant.now().getEpochSecond() + DONE_TTL_SECONDS))));
+        String[] p = key.split("\\|", 3); // engagementId|templateId|version
+        try {
+            ddb.transactWriteItems(b -> b.transactItems(
+                    TransactWriteItem.builder().put(Put.builder().tableName(table)
+                            .item(Map.of("k", s(key), "state", s("DONE"), "exp", n(Instant.now().getEpochSecond() + DONE_TTL_SECONDS)))
+                            .conditionExpression("attribute_not_exists(k) OR #s <> :done")
+                            .expressionAttributeNames(Map.of("#s", "state"))
+                            .expressionAttributeValues(Map.of(":done", s("DONE"))).build()).build(),
+                    TransactWriteItem.builder().update(Update.builder().tableName(table).key(Map.of("k", s(counterKey(p[1] + "@" + p[2]))))
+                            .updateExpression("ADD n :one").expressionAttributeValues(Map.of(":one", n(1))).build()).build()));
+        } catch (TransactionCanceledException e) {
+            // already DONE: counted before
+        }
+    }
+
+    /** Jobs DONE for an offer ("templateId@version"): one item read. Jobs finished before the counter existed are not counted. */
+    public long offerDone(String offer) {
+        var item = ddb.getItem(b -> b.tableName(table).key(Map.of("k", s(counterKey(offer)))).consistentRead(true)).item();
+        return item.isEmpty() ? 0 : Long.parseLong(item.get("n").n());
+    }
+
+    private static String counterKey(String offer) {
+        return "cnt#" + offer; // ids allow neither '#' nor '|', so it never collides with a job key
     }
 
     @Override

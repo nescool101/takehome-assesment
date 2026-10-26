@@ -137,11 +137,10 @@ public final class OpsApi {
 
     private Object offerStatus(String offer) {
         String[] p = offerParts(offer);
-        List<Job> jobs = registry.byOffer(offer);
-        long done = idem.countDone(jobs.stream().map(Job::key).toList());
+        long published = registry.countByOffer(offer), done = idem.offerDone(offer);
         boolean w = catalog.isWithdrawn(p[0], p[1]); // the catalog is the source of truth, also after a restart
-        return obj("offerId", offer, "published", jobs.size(), "done", done,
-                "inFlightOrQueued", jobs.size() - done, "withdrawn", w);
+        return obj("offerId", offer, "published", published, "done", done,
+                "inFlightOrQueued", published - done, "withdrawn", w);
     }
 
     private static String[] offerParts(String offer) {

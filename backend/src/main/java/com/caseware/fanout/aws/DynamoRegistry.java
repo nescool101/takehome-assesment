@@ -47,6 +47,14 @@ public class DynamoRegistry {
                 .expressionAttributeNames(Map.of("#o", "offer")).expressionAttributeValues(Map.of(":v", s(offer))));
     }
 
+    public long countByOffer(String offer) {
+        long n = 0;
+        for (var page : ddb.queryPaginator(b -> b.tableName(table).indexName("offer-index").select(Select.COUNT)
+                .keyConditionExpression("#o = :v").expressionAttributeNames(Map.of("#o", "offer"))
+                .expressionAttributeValues(Map.of(":v", s(offer))))) n += page.count();
+        return n;
+    }
+
     /** ponytail: full-table COUNT scan, ops metric only; keep a counter item if /metrics gets polled hard. */
     public long count() {
         long n = 0;

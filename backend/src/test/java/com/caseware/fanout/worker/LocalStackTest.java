@@ -148,14 +148,20 @@ class LocalStackTest {
     void releaseOnlyDeletesOwnClaimAndDecisionsPersist() {
         Env e = env();
         var other = new DynamoIdempotency(ddb, e.idem.table, Duration.ofMinutes(10));
-        assertEquals(Ports.IdempotencyStore.State.STARTED, e.idem.begin("k9"));
-        other.release("k9"); // not the owner
-        assertEquals(Ports.IdempotencyStore.State.IN_PROGRESS, e.idem.begin("k9"), "foreign release must not delete the claim");
-        e.idem.release("k9");
-        assertEquals(Ports.IdempotencyStore.State.STARTED, e.idem.begin("k9"));
-        e.idem.done("k9");
-        e.idem.release("k9"); // DONE is never released
-        assertEquals(Ports.IdempotencyStore.State.DONE, e.idem.begin("k9"));
+        assertEquals(Ports.IdempotencyStore.State.STARTED, e.idem.begin("e9|tplK|v1"));
+        other.release("e9|tplK|v1"); // not the owner
+        assertEquals(Ports.IdempotencyStore.State.IN_PROGRESS, e.idem.begin("e9|tplK|v1"), "foreign release must not delete the claim");
+        e.idem.release("e9|tplK|v1");
+        assertEquals(Ports.IdempotencyStore.State.STARTED, e.idem.begin("e9|tplK|v1"));
+        e.idem.done("e9|tplK|v1");
+        e.idem.release("e9|tplK|v1"); // DONE is never released
+        assertEquals(Ports.IdempotencyStore.State.DONE, e.idem.begin("e9|tplK|v1"));
+
+        e.idem.done("e1|tplC|v1");
+        e.idem.done("e1|tplC|v1"); // redelivery must not double-count
+        e.idem.done("e2|tplC|v1");
+        assertEquals(2, e.idem.offerDone("tplC@v1"));
+        assertEquals(0, e.idem.offerDone("tplC@v2"));
 
         String id = UUID.randomUUID().toString().substring(0, 8);
         ddb.createTable(b -> b.tableName("dec-" + id).billingMode(BillingMode.PAY_PER_REQUEST)
