@@ -24,6 +24,8 @@ resource "aws_sqs_queue" "work" {
   })
 }
 
+# Design-only: the engagement registry from the design doc. The harness keeps published jobs in memory (OpsApi) and
+# does not read or write this table yet.
 resource "aws_dynamodb_table" "registry" {
   name         = "${var.name}-registry"
   billing_mode = "PAY_PER_REQUEST"
@@ -64,7 +66,7 @@ resource "aws_dynamodb_table" "idempotency" {
   }
 }
 
-# offerId = hash(product, targetVersion)
+# offerId = "templateId|version" (written on publish, withdrawn flag set by withdraw)
 resource "aws_dynamodb_table" "offers" {
   name         = "${var.name}-offers"
   billing_mode = "PAY_PER_REQUEST"
@@ -75,6 +77,7 @@ resource "aws_dynamodb_table" "offers" {
   }
 }
 
+# Design-only: backfill checkpoints. The worker has no checkpointing yet, so nothing uses this table.
 resource "aws_dynamodb_table" "checkpoints" {
   name         = "${var.name}-checkpoints"
   billing_mode = "PAY_PER_REQUEST"
@@ -85,7 +88,7 @@ resource "aws_dynamodb_table" "checkpoints" {
   }
 }
 
-# audit trail: what summary the user saw when deciding
+# decisions: one item per apply/decline with the offers it covered (written by OpsApi); the summary shown is not stored yet
 resource "aws_dynamodb_table" "decisions" {
   name         = "${var.name}-decisions"
   billing_mode = "PAY_PER_REQUEST"

@@ -1,0 +1,30 @@
+{
+ "scenario": "OPTIMISTIC",
+ "cacheEnabled": true,
+ "catalogReads": 98,
+ "date": "2026-10-26",
+ "permits": 200,
+ "simLatencyMs": 300,
+ "jobs": 800,
+ "offers": 1,
+ "measuredDrainSeconds": 5.47,
+ "littleLawPredictedSeconds": 1.2,
+ "measuredOverPredicted": 4.56,
+ "medianFirmBadgeSeconds": {
+  "tpl-0@v1793018863": 4.39
+ },
+ "peakConcurrent": 90,
+ "peakWithinPermits": true,
+ "duplicateDownstreamCalls": 0,
+ "dlq": {
+  "visible": 0,
+  "inFlight": 0
+ },
+ "extrapolatedRealDrain": {
+  "jobs": 40400,
+  "seconds": 24000,
+  "hours": 6.7,
+  "note": "full-scale burst at real 60s load, same permits and per-firm cap"
+ },
+ "pass": true
+}

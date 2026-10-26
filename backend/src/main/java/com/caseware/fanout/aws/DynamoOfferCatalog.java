@@ -7,6 +7,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
 
 /**
  * Offers table (hash key offerId = "templateId|version"); item with withdrawn=true means withdrawn.
@@ -50,6 +51,23 @@ public class DynamoOfferCatalog implements OfferCatalog {
         // withdrawal is irreversible: never let a racing stale read overwrite a withdrawn entry
         if (ttlNanos > 0) cache.merge(id, new Entry(withdrawn, now + ttlNanos), (old, nu) -> old.withdrawn ? old : nu);
         return withdrawn;
+    }
+
+    /** Publish records the offer so withdraw can tell a real offer from a typo. Keeps an existing row (and its withdrawn flag). */
+    public void register(String templateId, String version) {
+        try {
+            ddb.putItem(b -> b.tableName(table).item(Map.of(
+                            "offerId", AttributeValue.builder().s(templateId + "|" + version).build(),
+                            "withdrawn", AttributeValue.builder().bool(false).build()))
+                    .conditionExpression("attribute_not_exists(offerId)"));
+        } catch (ConditionalCheckFailedException e) {
+            // already known
+        }
+    }
+
+    public boolean exists(String templateId, String version) {
+        return !ddb.getItem(b -> b.tableName(table).consistentRead(true).key(Map.of(
+                "offerId", AttributeValue.builder().s(templateId + "|" + version).build()))).item().isEmpty();
     }
 
     public void withdraw(String templateId, String version) {

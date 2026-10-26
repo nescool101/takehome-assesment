@@ -34,6 +34,7 @@ public final class Main {
                 String.valueOf(cfg.visibilityTimeoutSeconds()))));
         var source = new SqsJobSource(sqs, q, dlq);
         var idem = new DynamoIdempotency(ddb, name + "-idempotency", Duration.ofSeconds(2L * cfg.visibilityTimeoutSeconds()));
+        var decisions = new DynamoDecisions(ddb, name + "-decisions");
         var catalog = new DynamoOfferCatalog(ddb, name + "-offers",
                 cfg.cacheEnabled() ? Duration.ofSeconds(cfg.cacheTtlSeconds()) : Duration.ZERO);
 
@@ -41,11 +42,11 @@ public final class Main {
         var downstream = new SimulatedDownstream(cfg.simLatencyMs());
         var worker = new FanOutWorker(source, downstream, idem, catalog,
                 new FirmLimiter(Math.max(1, permits / 2)), // ponytail: fixed half-of-permits per-firm cap, tune from load results
-                new CircuitBreaker(5, 5_000, System::currentTimeMillis),
+                new CircuitBreaker(cfg.breakerFailures(), cfg.breakerCooldownMs(), System::currentTimeMillis),
                 new Backoff(Duration.ofMillis(200), Duration.ofSeconds(30), new Random()),
-                permits, cfg.retryMaxAttempts(), Duration.ofSeconds(1));
+                permits, cfg.retryMaxAttempts(), Duration.ofMillis(cfg.deferDelayMs()));
 
-        new OpsApi(Integer.parseInt(env("PORT", "8080")), source, idem, catalog, sqs, q, dlq,
+        new OpsApi(Integer.parseInt(env("PORT", "8080")), source, idem, catalog, decisions, sqs, q, dlq,
                 downstream::statsJson, configJson(cfg)).start();
         System.out.println("ops api up, permits=" + permits + " simLatencyMs=" + cfg.simLatencyMs());
         worker.run(() -> false, 10, Duration.ofMillis(100));

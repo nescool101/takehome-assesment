@@ -51,4 +51,16 @@ class AppConfigTest {
     void badScenarioFails() {
         assertThrows(IllegalArgumentException.class, () -> AppConfig.from(Map.of("SCENARIO", "WILD")));
     }
+
+    @Test
+    void workerKnobsHaveDefaultsAndOverrides() {
+        AppConfig d = AppConfig.from(Map.of());
+        assertEquals(5, d.breakerFailures());
+        assertEquals(5_000, d.breakerCooldownMs());
+        assertEquals(1_000, d.deferDelayMs());
+        AppConfig c = AppConfig.from(Map.of("BREAKER_FAILURES", "8", "BREAKER_COOLDOWN_MS", "250", "DEFER_DELAY_MS", "50"));
+        assertEquals(8, c.breakerFailures());
+        assertEquals(250, c.breakerCooldownMs());
+        assertEquals(50, c.deferDelayMs());
+    }
 }

@@ -11,6 +11,8 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.regex.*;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.QueueAttributeName;
 
@@ -22,23 +24,25 @@ public final class OpsApi {
     private final SqsJobSource source;
     private final DynamoIdempotency idem;
     private final DynamoOfferCatalog catalog;
+    private final DynamoDecisions decisions;
+    private static final ObjectMapper JSON = new ObjectMapper();
     private final SqsClient sqs;
     private final String queueUrl, dlqUrl;
     private final Map<String, Set<Job>> byOffer = new ConcurrentHashMap<>(); // sets: a repeated publish must not double-count
     private final Map<String, Set<Job>> byEngagement = new ConcurrentHashMap<>();
-    private final Set<String> decided = ConcurrentHashMap.newKeySet(); // job keys applied/declined
     private final java.util.function.Supplier<String> downstreamStats;
     private final String configJson;
     private final HttpServer server;
 
     public OpsApi(int port, SqsJobSource source, DynamoIdempotency idem, DynamoOfferCatalog catalog,
-                  SqsClient sqs, String queueUrl, String dlqUrl,
+                  DynamoDecisions decisions, SqsClient sqs, String queueUrl, String dlqUrl,
                   java.util.function.Supplier<String> downstreamStats, String configJson) throws IOException {
         this.downstreamStats = downstreamStats;
         this.configJson = configJson;
         this.source = source;
         this.idem = idem;
         this.catalog = catalog;
+        this.decisions = decisions;
         this.sqs = sqs;
         this.queueUrl = queueUrl;
         this.dlqUrl = dlqUrl;
@@ -91,27 +95,40 @@ public final class OpsApi {
     }
 
     private static final Pattern ID = Pattern.compile("[A-Za-z0-9._:-]{1,128}"); // no '|' '@' quotes or backslashes: ids go into keys and JSON
-    private static final Pattern OBJ = Pattern.compile("\\{[^{}]*\\}");
-
     private static String id(String v, String what) {
         if (v == null || !ID.matcher(v).matches()) throw new IllegalArgumentException("bad " + what + " (allowed: letters, digits, . _ : -)");
         return v;
     }
 
-    /** Body: {"templateId":"tpl","version":"v7","engagements":[{"id":"e1","firmId":"f1"},...]} (flat objects, any field order). */
+    private static JsonNode parse(HttpExchange x) throws IOException {
+        try {
+            JsonNode n = JSON.readTree(x.getRequestBody());
+            if (n == null || !n.isObject()) throw new IllegalArgumentException("body must be a JSON object");
+            return n;
+        } catch (com.fasterxml.jackson.core.JacksonException e) {
+            throw new IllegalArgumentException("invalid JSON");
+        }
+    }
+
+    private static String text(JsonNode n, String name) {
+        JsonNode v = n.get(name);
+        if (v == null || !v.isTextual() || v.asText().isBlank()) throw new IllegalArgumentException("missing " + name);
+        return v.asText();
+    }
+
+    /** Body: {"templateId":"tpl","version":"v7","engagements":[{"id":"e1","firmId":"f1"},...]} (extra fields are ignored). */
     private void publish(HttpExchange x) throws IOException {
-        String b = new String(x.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
-        String tpl = id(field(b, "templateId"), "templateId"), ver = id(field(b, "version"), "version");
-        int at = b.indexOf("\"engagements\"");
-        if (at < 0) throw new IllegalArgumentException("missing engagements");
+        JsonNode b = parse(x);
+        String tpl = id(text(b, "templateId"), "templateId"), ver = id(text(b, "version"), "version");
+        JsonNode engs = b.get("engagements");
+        if (engs == null || !engs.isArray() || engs.isEmpty()) throw new IllegalArgumentException("no engagements");
         Set<Job> batch = new LinkedHashSet<>(); // a repeated engagement in the body is one job
-        Matcher em = OBJ.matcher(b.substring(at));
-        while (em.find())
-            batch.add(new Job(id(field(em.group(), "id"), "engagement id"), id(field(em.group(), "firmId"), "firmId"), tpl, ver));
-        if (batch.isEmpty()) throw new IllegalArgumentException("no engagements");
+        for (JsonNode e : engs)
+            batch.add(new Job(id(text(e, "id"), "engagement id"), id(text(e, "firmId"), "firmId"), tpl, ver));
         String offer = tpl + "@" + ver;
+        catalog.register(tpl, ver);
         source.sendAll(List.copyOf(batch));
-        // register only after the enqueue succeeded: a failed publish leaves no phantom jobs
+        // register jobs only after the enqueue succeeded: a failed publish leaves no phantom jobs
         for (Job j : batch) {
             byOffer.computeIfAbsent(offer, k -> ConcurrentHashMap.newKeySet()).add(j);
             byEngagement.computeIfAbsent(j.engagementId(), k -> ConcurrentHashMap.newKeySet()).add(j);
@@ -143,6 +160,7 @@ public final class OpsApi {
 
     private void withdraw(HttpExchange x, String offer) throws IOException {
         String[] p = offerParts(offer);
+        if (!catalog.exists(p[0], p[1])) throw new IllegalArgumentException("unknown offer " + offer);
         catalog.withdraw(p[0], p[1]);
         send(x, 200, offerStatus(offer));
     }
@@ -159,18 +177,18 @@ public final class OpsApi {
     private List<Job> pendingJobs(String eng) {
         id(eng, "engagement id");
         List<Job> out = new ArrayList<>();
+        Set<String> decided = decisions.decidedKeys(eng);
         for (Job j : snapshot(byEngagement.getOrDefault(eng, Set.of())))
             if (!decided.contains(j.key()) && idem.isDone(j.key()) && !catalog.isWithdrawn(j.templateId(), j.version())) out.add(j);
         return out;
     }
 
     private void decision(HttpExchange x, String eng) throws IOException {
-        String b = new String(x.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
-        String action = field(b, "action");
+        String action = text(parse(x), "action");
         if (!action.equals("apply") && !action.equals("decline")) throw new IllegalArgumentException("action: apply|decline");
         // only offers the user could see: one published a moment later must keep its badge
-        // ponytail: apply and decline both just clear the badge (no apply target exists yet); decisions are in memory, the decisions table is the real home
-        for (Job j : pendingJobs(eng)) decided.add(j.key());
+        // ponytail: apply and decline both just clear the badge (no apply target exists yet); the action is stored for the audit trail
+        decisions.record(eng, action, pendingJobs(eng).stream().map(Job::key).toList());
         send(x, 200, engagementStatus(eng));
     }
 
@@ -186,12 +204,6 @@ public final class OpsApi {
                 QueueAttributeName.APPROXIMATE_NUMBER_OF_MESSAGES_NOT_VISIBLE)).attributes();
         return "{\"visible\":" + a.get(QueueAttributeName.APPROXIMATE_NUMBER_OF_MESSAGES)
                 + ",\"inFlight\":" + a.get(QueueAttributeName.APPROXIMATE_NUMBER_OF_MESSAGES_NOT_VISIBLE) + "}";
-    }
-
-    private static String field(String body, String name) {
-        Matcher m = Pattern.compile("\"" + name + "\"\\s*:\\s*\"([^\"]*)\"").matcher(body);
-        if (!m.find() || m.group(1).isBlank()) throw new IllegalArgumentException("missing " + name);
-        return m.group(1);
     }
 
     private static String json(List<String> l) {

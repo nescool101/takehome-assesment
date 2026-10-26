@@ -143,4 +143,43 @@ class LocalStackTest {
         try { Thread.sleep(1_100); } catch (InterruptedException ex) { throw new RuntimeException(ex); }
         assertEquals(Ports.IdempotencyStore.State.STARTED, zero.begin("k2"), "expired lease retaken");
     }
+
+    @Test
+    void releaseOnlyDeletesOwnClaimAndDecisionsPersist() {
+        Env e = env();
+        var other = new DynamoIdempotency(ddb, e.idem.table, Duration.ofMinutes(10));
+        assertEquals(Ports.IdempotencyStore.State.STARTED, e.idem.begin("k9"));
+        other.release("k9"); // not the owner
+        assertEquals(Ports.IdempotencyStore.State.IN_PROGRESS, e.idem.begin("k9"), "foreign release must not delete the claim");
+        e.idem.release("k9");
+        assertEquals(Ports.IdempotencyStore.State.STARTED, e.idem.begin("k9"));
+        e.idem.done("k9");
+        e.idem.release("k9"); // DONE is never released
+        assertEquals(Ports.IdempotencyStore.State.DONE, e.idem.begin("k9"));
+
+        String id = UUID.randomUUID().toString().substring(0, 8);
+        ddb.createTable(b -> b.tableName("dec-" + id).billingMode(BillingMode.PAY_PER_REQUEST)
+                .keySchema(KeySchemaElement.builder().attributeName("engagementId").keyType(KeyType.HASH).build(),
+                        KeySchemaElement.builder().attributeName("decidedAt").keyType(KeyType.RANGE).build())
+                .attributeDefinitions(
+                        AttributeDefinition.builder().attributeName("engagementId").attributeType(ScalarAttributeType.S).build(),
+                        AttributeDefinition.builder().attributeName("decidedAt").attributeType(ScalarAttributeType.S).build()));
+        var dec = new DynamoDecisions(ddb, "dec-" + id);
+        dec.record("e1", "decline", java.util.List.of("e1|tpl|v1"));
+        dec.record("e1", "apply", java.util.List.of("e1|tpl|v2"));
+        dec.record("e1", "apply", java.util.List.of()); // nothing visible: nothing recorded
+        assertEquals(java.util.Set.of("e1|tpl|v1", "e1|tpl|v2"), dec.decidedKeys("e1"));
+        assertTrue(dec.decidedKeys("e2").isEmpty());
+    }
+
+    @Test
+    void registerKeepsExistingRowAndWithdrawNeedsAKnownOffer() {
+        Env e = env();
+        assertFalse(e.cat.exists("tpl", "v1"));
+        e.cat.register("tpl", "v1");
+        assertTrue(e.cat.exists("tpl", "v1"));
+        e.cat.withdraw("tpl", "v1");
+        e.cat.register("tpl", "v1"); // republish must not un-withdraw
+        assertTrue(e.cat.isWithdrawn("tpl", "v1"));
+    }
 }

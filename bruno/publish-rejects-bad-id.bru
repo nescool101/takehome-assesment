@@ -1,0 +1,18 @@
+meta {
+  name: publish rejects ids with separators or quotes
+  seq: 12
+}
+
+post {
+  url: {{base}}/admin/publishes
+  body: json
+  auth: none
+}
+
+body:json {
+  {"templateId":"tpl","version":"v1","engagements":[{"id":"a|b","firmId":"f1"}]}
+}
+
+assert {
+  res.status: eq 400
+}

@@ -14,7 +14,10 @@ public record AppConfig(
         int visibilityTimeoutSeconds,
         long simLatencyMs,
         boolean cacheEnabled,
-        int cacheTtlSeconds) {
+        int cacheTtlSeconds,
+        int breakerFailures,
+        long breakerCooldownMs,
+        long deferDelayMs) {
 
     public static AppConfig fromEnv() {
         return from(System.getenv());
@@ -42,7 +45,10 @@ public record AppConfig(
                 getInt(env, "SQS_VISIBILITY_TIMEOUT_SECONDS", 300),
                 getInt(env, "SIM_LATENCY_MS", 100),
                 Boolean.parseBoolean(get(env, "CACHE_ENABLED", "false")),
-                getInt(env, "CACHE_TTL_SECONDS", 5));
+                getInt(env, "CACHE_TTL_SECONDS", 5),
+                getInt(env, "BREAKER_FAILURES", 5),
+                getInt(env, "BREAKER_COOLDOWN_MS", 5_000),
+                getInt(env, "DEFER_DELAY_MS", 1_000));
     }
 
     private static String get(Map<String, String> env, String key, String dflt) {
