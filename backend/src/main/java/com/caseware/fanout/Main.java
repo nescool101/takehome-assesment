@@ -23,6 +23,7 @@ public final class Main {
     public static void main(String[] args) throws Exception {
         AppConfig cfg = AppConfig.fromEnv();
         String name = env("REGION_NAME", "us");
+        Log.service = name;
         var sqs = aws(SqsClient.builder()).build();
         var ddb = aws(DynamoDbClient.builder()).build();
 
@@ -41,14 +42,14 @@ public final class Main {
         int permits = cfg.profile().downstreamPermits();
         var downstream = new SimulatedDownstream(cfg.simLatencyMs());
         var worker = new FanOutWorker(source, downstream, idem, catalog,
-                new FirmLimiter(Math.max(1, permits / 2)), // ponytail: fixed half-of-permits per-firm cap, tune from load results
+                new FirmLimiter(Math.max(1, permits / 2), permits), // ponytail: hard cap = half the permits, shrinking to a fair share as more firms are active
                 new CircuitBreaker(cfg.breakerFailures(), cfg.breakerCooldownMs(), System::currentTimeMillis),
                 new Backoff(Duration.ofMillis(200), Duration.ofSeconds(30), new Random()),
                 permits, cfg.retryMaxAttempts(), Duration.ofMillis(cfg.deferDelayMs()));
 
         new OpsApi(Integer.parseInt(env("PORT", "8080")), source, idem, catalog, decisions, registry, sqs, q, dlq,
                 downstream::statsJson, configJson(cfg)).start();
-        System.out.println("ops api up, permits=" + permits + " simLatencyMs=" + cfg.simLatencyMs());
+        Log.event("info", "started", "permits", permits, "simLatencyMs", cfg.simLatencyMs());
         // SIGTERM (ECS deploy): stop polling, let in-flight loads finish and ack, then exit
         var stop = new AtomicBoolean();
         var main = Thread.currentThread();
@@ -59,7 +60,15 @@ public final class Main {
             } catch (InterruptedException ignored) {
             }
         }));
+        var metrics = java.util.concurrent.Executors.newSingleThreadScheduledExecutor(r -> {
+            var t = new Thread(r, "metrics");
+            t.setDaemon(true);
+            return t;
+        });
+        metrics.scheduleAtFixedRate(worker::flushMetrics, 60, 60, java.util.concurrent.TimeUnit.SECONDS);
         worker.run(stop::get, 10, Duration.ofMillis(100));
+        metrics.shutdown();
+        worker.flushMetrics();
     }
 
     private static String configJson(AppConfig c) {

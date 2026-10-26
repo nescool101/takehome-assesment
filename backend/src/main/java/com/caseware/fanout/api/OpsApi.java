@@ -2,13 +2,13 @@ package com.caseware.fanout.api;
 
 import com.caseware.fanout.aws.*;
 import com.caseware.fanout.worker.Job;
+import com.caseware.fanout.worker.Log;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.regex.*;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -57,7 +57,7 @@ public final class OpsApi {
     private static final Pattern ENG = Pattern.compile("/engagements/([^/]+)/(status|decision)");
 
     private void handle(HttpExchange x) throws IOException {
-        x.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
+        if (CORS_ORIGIN != null) x.getResponseHeaders().add("Access-Control-Allow-Origin", CORS_ORIGIN);
         x.getResponseHeaders().add("Access-Control-Allow-Headers", "content-type,x-admin-token");
         x.getResponseHeaders().add("Content-Type", "application/json");
         try {
@@ -76,23 +76,33 @@ public final class OpsApi {
         } catch (IllegalArgumentException ex) {
             send(x, 400, err(ex.getMessage()));
         } catch (RuntimeException ex) {
-            System.err.println("500 " + x.getRequestURI().getPath() + ": " + ex);
+            Log.event("error", "http_500", "path", x.getRequestURI().getPath(), "error", ex.toString());
             send(x, 500, err("internal error"));
         }
     }
 
     /**
      * Mutating calls must be application/json: a cross-site page can only send text/plain without a preflight.
-     * ponytail: ADMIN_TOKEN is a shared secret on /admin/*; swap for real auth (the gateway API key does not cover :8080).
+     * ponytail: ADMIN_TOKEN is a shared secret on /admin/* (required outside LocalStack); swap for real auth (the gateway API key does not cover :8080).
      */
+    /** AWS_ENDPOINT_URL set = LocalStack dev: open admin and CORS "*" as before. Real AWS fails closed. */
+    private static final boolean LOCAL = !System.getenv().getOrDefault("AWS_ENDPOINT_URL", "").isBlank();
+    private static final String CORS_ORIGIN = nonBlank(System.getenv("CORS_ORIGIN"), LOCAL ? "*" : null);
+
+    private static String nonBlank(String v, String d) {
+        return v == null || v.isBlank() ? d : v;
+    }
+
     private static boolean authorized(HttpExchange x, String method, String path) {
         if (method.equals("POST")) {
             String ct = x.getRequestHeaders().getFirst("Content-Type");
             if (ct == null || !ct.toLowerCase().startsWith("application/json")) return false;
         }
         String token = System.getenv("ADMIN_TOKEN");
-        return token == null || token.isBlank() || !path.startsWith("/admin/")
-                || token.equals(x.getRequestHeaders().getFirst("x-admin-token"));
+        if (!path.startsWith("/admin/")) return true;
+        if (token == null || token.isBlank()) return LOCAL; // no token configured: only LocalStack dev leaves /admin open
+        String got = x.getRequestHeaders().getFirst("x-admin-token");
+        return got != null && java.security.MessageDigest.isEqual(token.getBytes(StandardCharsets.UTF_8), got.getBytes(StandardCharsets.UTF_8));
     }
 
     private static final Pattern ID = Pattern.compile("[A-Za-z0-9._:-]{1,128}"); // no '|' '@' quotes or backslashes: ids go into keys and JSON

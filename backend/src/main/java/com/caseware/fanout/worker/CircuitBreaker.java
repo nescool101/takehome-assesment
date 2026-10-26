@@ -11,6 +11,7 @@ public final class CircuitBreaker {
     private final LongSupplier nowMs;
     private final AtomicInteger consecutiveFailures = new AtomicInteger();
     private final AtomicLong openUntil = new AtomicLong();
+    private final AtomicLong nextProbe = new AtomicLong();
 
     public CircuitBreaker(int threshold, long cooldownMs, LongSupplier nowMs) {
         this.threshold = threshold;
@@ -18,9 +19,21 @@ public final class CircuitBreaker {
         this.nowMs = nowMs;
     }
 
-    // ponytail: after cooldown everything is let through (no single half-open probe); failures re-open at once.
+    /**
+     * Closed: yes. Cooling down: no. After the cooldown (half-open): one probe per cooldown window; its success closes
+     * the breaker, its failure re-opens it. A probe lost to a deferral or non-breaker outcome just expires.
+     */
     public boolean allow() {
-        return nowMs.getAsLong() >= openUntil.get();
+        long now = nowMs.getAsLong();
+        if (now < openUntil.get()) return false;
+        if (consecutiveFailures.get() < threshold) return true;
+        long p = nextProbe.get();
+        return now >= p && nextProbe.compareAndSet(p, now + cooldownMs);
+    }
+
+    /** Non-consuming peek for the poll loop: true while no call would be allowed through. */
+    public boolean coolingDown() {
+        return nowMs.getAsLong() < openUntil.get();
     }
 
     public void success() {

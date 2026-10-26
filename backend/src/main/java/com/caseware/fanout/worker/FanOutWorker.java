@@ -5,7 +5,10 @@ import com.caseware.fanout.worker.Ports.*;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.Executors;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BooleanSupplier;
 
 /**
@@ -24,6 +27,8 @@ public final class FanOutWorker {
     private final int maxAttempts;
     private final Duration deferDelay;
     private final Semaphore slots;
+    private final int permits;
+    private final Map<String, LongAdder> counts = new ConcurrentHashMap<>();
 
     public FanOutWorker(JobSource source, DownstreamClient downstream, IdempotencyStore idem, OfferCatalog catalog,
                         FirmLimiter firms, CircuitBreaker breaker, Backoff backoff,
@@ -37,6 +42,7 @@ public final class FanOutWorker {
         this.backoff = backoff;
         this.maxAttempts = maxAttempts;
         this.deferDelay = deferDelay;
+        this.permits = permits;
         this.slots = new Semaphore(permits);
     }
 
@@ -44,7 +50,7 @@ public final class FanOutWorker {
     public void run(BooleanSupplier stop, int batch, Duration idle) {
         try (var pool = Executors.newVirtualThreadPerTaskExecutor()) {
             while (!stop.getAsBoolean() && !Thread.currentThread().isInterrupted()) {
-                if (!breaker.allow()) { // breaker open: leave messages on the queue instead of receive+resend+delete per message
+                if (breaker.coolingDown()) { // breaker open: leave messages on the queue instead of receive+resend+delete per message
                     sleep(idle);
                     continue;
                 }
@@ -54,7 +60,7 @@ public final class FanOutWorker {
                     try {
                         got = source.poll(want);
                     } catch (RuntimeException e) { // transient SQS error: keep the loop alive
-                        System.err.println("poll failed: " + e);
+                        Log.event("error", "poll_failed", "error", e.toString());
                     }
                     slots.release(want - got.size()); // return unused slots
                 }
@@ -67,7 +73,7 @@ public final class FanOutWorker {
                         try {
                             process(r);
                         } catch (RuntimeException e) { // message stays unacked: redelivered after the visibility timeout
-                            System.err.println("process failed for " + r.job().key() + ": " + e);
+                            Log.event("error", "process_failed", "job", r.job().key(), "error", e.toString());
                         } finally {
                             slots.release();
                         }
@@ -77,7 +83,25 @@ public final class FanOutWorker {
         } // close() waits for in-flight work
     }
 
+    /** Emit and reset the outcome counters since the last flush, plus current in-flight, as one EMF line. */
+    public void flushMetrics() {
+        var m = new java.util.LinkedHashMap<String, Long>();
+        for (String k : List.of("Done", "Skipped", "Deferred", "Retried", "DeadLettered")) {
+            var a = counts.get(k);
+            m.put(k, a == null ? 0L : a.sumThenReset());
+        }
+        m.put("InFlight", (long) (permits - slots.availablePermits()));
+        Log.emf(m);
+    }
+
     public Outcome process(Received r) {
+        Outcome o = handle(r);
+        counts.computeIfAbsent(o.getClass().getSimpleName(), k -> new LongAdder()).increment();
+        if (o instanceof DeadLettered d) Log.event("warn", "dead_lettered", "job", r.job().key(), "reason", d.reason());
+        return o;
+    }
+
+    private Outcome handle(Received r) {
         Job job = r.job();
         if (catalog.isWithdrawn(job.templateId(), job.version())) {
             source.ack(r);
