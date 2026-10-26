@@ -17,6 +17,9 @@ services:
       - { path: ../.env, required: false }  # optional overrides; defaults live in code
     environment:
       AWS_ENDPOINT_URL: http://localstack:4566
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-test}  # LocalStack accepts any value; real AWS uses the task/pod role
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-test}
       SCENARIO: ${SCENARIO:-MID}
       BUDGET: ${BUDGET:-MID}
       SIM_LATENCY_MS: ${SIM_LATENCY_MS:-300}

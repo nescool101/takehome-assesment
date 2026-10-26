@@ -49,3 +49,5 @@ Kept so reviewers can see what went wrong, not just the final state. Newest last
 - Define `ADMIN_TOKEN` (and `CORS_ORIGIN` if a browser UI calls the ops API). Without the token, `/admin/*` returns 403, so the panel and the publish flow fail.
 - Run `terraform apply` for `envs/aws`: the `registry` table schema changed (range key `offer`, new GSI `offer-index`).
 - Alarms and dashboards on the EMF metrics (namespace `Fanout`, dimension `Service`) are not built yet; that is CloudWatch infrastructure still to do.
+- Config is injected, never hardcoded: `Main` has no endpoint, region or credential defaults. Docker Compose sets them for LocalStack; on Kubernetes use a ConfigMap/Secret (or IRSA / pod identity for credentials), on ECS the task definition and task role, and Terraform can render either (`REGION_NAME`, `ADMIN_TOKEN`, `CORS_ORIGIN`, `AWS_REGION`).
+- Open (reviewer note): breaker state and the per-firm limiter are per process. With several workers each keeps its own view; sharing them needs a distributed store (DynamoDB conditional writes with a lease, or ShedLock-style locking). Also revisit `isInterrupted()` as the only loop exit and the executor choice.

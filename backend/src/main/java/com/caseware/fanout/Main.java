@@ -10,10 +10,7 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.awscore.client.builder.AwsClientBuilder;
-import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.QueueAttributeName;
@@ -81,13 +78,10 @@ public final class Main {
                 + ",\"visibilityTimeoutSeconds\":" + c.visibilityTimeoutSeconds() + "}";
     }
 
-    /** AWS_ENDPOINT_URL set => LocalStack (static test creds); unset => real AWS via the default credential/region chain. */
+    /** Region and credentials always come from the environment (default AWS chain: env vars, IRSA/pod identity, task role). */
     private static <B extends AwsClientBuilder<B, ?>> B aws(B b) {
         String ep = System.getenv("AWS_ENDPOINT_URL");
-        if (ep == null || ep.isBlank()) return b;
-        return b.endpointOverride(URI.create(ep)).region(Region.of(env("AWS_REGION", "us-east-1")))
-                .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create(
-                        env("AWS_ACCESS_KEY_ID", "test"), env("AWS_SECRET_ACCESS_KEY", "test"))));
+        return ep == null || ep.isBlank() ? b : b.endpointOverride(URI.create(ep)); // LocalStack only
     }
 
     private static String env(String k, String d) {
