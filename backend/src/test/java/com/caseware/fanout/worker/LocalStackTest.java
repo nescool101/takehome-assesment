@@ -148,14 +148,20 @@ class LocalStackTest {
     void releaseOnlyDeletesOwnClaimAndDecisionsPersist() {
         Env e = env();
         var other = new DynamoIdempotency(ddb, e.idem.table, Duration.ofMinutes(10));
-        assertEquals(Ports.IdempotencyStore.State.STARTED, e.idem.begin("k9"));
-        other.release("k9"); // not the owner
-        assertEquals(Ports.IdempotencyStore.State.IN_PROGRESS, e.idem.begin("k9"), "foreign release must not delete the claim");
-        e.idem.release("k9");
-        assertEquals(Ports.IdempotencyStore.State.STARTED, e.idem.begin("k9"));
-        e.idem.done("k9");
-        e.idem.release("k9"); // DONE is never released
-        assertEquals(Ports.IdempotencyStore.State.DONE, e.idem.begin("k9"));
+        assertEquals(Ports.IdempotencyStore.State.STARTED, e.idem.begin("e9|tplK|v1"));
+        other.release("e9|tplK|v1"); // not the owner
+        assertEquals(Ports.IdempotencyStore.State.IN_PROGRESS, e.idem.begin("e9|tplK|v1"), "foreign release must not delete the claim");
+        e.idem.release("e9|tplK|v1");
+        assertEquals(Ports.IdempotencyStore.State.STARTED, e.idem.begin("e9|tplK|v1"));
+        e.idem.done("e9|tplK|v1");
+        e.idem.release("e9|tplK|v1"); // DONE is never released
+        assertEquals(Ports.IdempotencyStore.State.DONE, e.idem.begin("e9|tplK|v1"));
+
+        e.idem.done("e1|tplC|v1");
+        e.idem.done("e1|tplC|v1"); // redelivery must not double-count
+        e.idem.done("e2|tplC|v1");
+        assertEquals(2, e.idem.offerDone("tplC@v1"));
+        assertEquals(0, e.idem.offerDone("tplC@v2"));
 
         String id = UUID.randomUUID().toString().substring(0, 8);
         ddb.createTable(b -> b.tableName("dec-" + id).billingMode(BillingMode.PAY_PER_REQUEST)
@@ -181,5 +187,48 @@ class LocalStackTest {
         e.cat.withdraw("tpl", "v1");
         e.cat.register("tpl", "v1"); // republish must not un-withdraw
         assertTrue(e.cat.isWithdrawn("tpl", "v1"));
+    }
+
+    @Test
+    void registryIndexesJobsByEngagementAndOfferAndIsIdempotent() {
+        String t = "reg-" + UUID.randomUUID().toString().substring(0, 8);
+        ddb.createTable(b -> b.tableName(t).billingMode(BillingMode.PAY_PER_REQUEST)
+                .keySchema(KeySchemaElement.builder().attributeName("engagementId").keyType(KeyType.HASH).build(),
+                        KeySchemaElement.builder().attributeName("offer").keyType(KeyType.RANGE).build())
+                .attributeDefinitions(
+                        AttributeDefinition.builder().attributeName("engagementId").attributeType(ScalarAttributeType.S).build(),
+                        AttributeDefinition.builder().attributeName("offer").attributeType(ScalarAttributeType.S).build())
+                .globalSecondaryIndexes(GlobalSecondaryIndex.builder().indexName("offer-index")
+                        .keySchema(KeySchemaElement.builder().attributeName("offer").keyType(KeyType.HASH).build())
+                        .projection(Projection.builder().projectionType(ProjectionType.ALL).build()).build()));
+        var reg = new DynamoRegistry(ddb, t);
+        var jobs = new java.util.ArrayList<Job>();
+        for (int i = 0; i < 30; i++) jobs.add(new Job("e" + i, "f1", "tpl", "v1")); // > 25: several batches
+        jobs.add(new Job("e0", "f1", "tpl", "v2"));
+        reg.putAll(jobs);
+        reg.putAll(jobs); // republish: same rows
+        assertEquals(2, reg.byEngagement("e0").size());
+        assertEquals(30, reg.byOffer("tpl@v1").size());
+        assertEquals(31, reg.count());
+    }
+
+    @Test
+    void breakerStateIsSharedAcrossWorkers() throws Exception {
+        Env e = env();
+        String locks = "locks-" + UUID.randomUUID().toString().substring(0, 8);
+        net.javacrumbs.shedlock.provider.dynamodb2.DynamoDBUtils.createLockTable(ddb, locks,
+                ProvisionedThroughput.builder().readCapacityUnits(1L).writeCapacityUnits(1L).build());
+        var lp = new net.javacrumbs.shedlock.provider.dynamodb2.DynamoDBLockProvider(ddb, locks);
+        var a = new CircuitBreaker(2, 300, System::currentTimeMillis, new DynamoBreakerStore(ddb, e.idem.table, lp), 0);
+        var b = new CircuitBreaker(2, 300, System::currentTimeMillis, new DynamoBreakerStore(ddb, e.idem.table, lp), 0);
+        a.failure();
+        assertTrue(b.allow());
+        b.failure(); // 2nd failure overall, from the other worker
+        assertFalse(a.allow(), "worker A sees the breaker B tripped");
+        Thread.sleep(350);
+        assertTrue(a.allow(), "one probe wins the cooldown window");
+        assertFalse(b.allow(), "the other worker must not also probe");
+        a.success();
+        assertTrue(b.allow(), "closed for everyone after the probe succeeds");
     }
 }

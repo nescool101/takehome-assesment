@@ -24,14 +24,19 @@ resource "aws_sqs_queue" "work" {
   })
 }
 
-# Design-only: the engagement registry from the design doc. The harness keeps published jobs in memory (OpsApi) and
-# does not read or write this table yet.
+# Engagement registry (design D1): one item per (engagement, published offer). OpsApi writes it on publish and reads it
+# by engagement (badge) or by offer (status, GSI "offer-index": eventually consistent).
 resource "aws_dynamodb_table" "registry" {
   name         = "${var.name}-registry"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "engagementId"
+  range_key    = "offer"
   attribute {
     name = "engagementId"
+    type = "S"
+  }
+  attribute {
+    name = "offer"
     type = "S"
   }
   attribute {
@@ -46,6 +51,11 @@ resource "aws_dynamodb_table" "registry" {
     name            = "firm-template"
     hash_key        = "firmId"
     range_key       = "templateId"
+    projection_type = "ALL"
+  }
+  global_secondary_index {
+    name            = "offer-index"
+    hash_key        = "offer"
     projection_type = "ALL"
   }
 }
@@ -106,3 +116,14 @@ resource "aws_dynamodb_table" "decisions" {
 
 output "queue_url" { value = aws_sqs_queue.work.url }
 output "dlq_url" { value = aws_sqs_queue.dlq.url }
+
+# ShedLock table: the shared circuit breaker takes its half-open probe lock here (hash key "_id" is ShedLock's schema)
+resource "aws_dynamodb_table" "locks" {
+  name         = "${var.name}-locks"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "_id"
+  attribute {
+    name = "_id"
+    type = "S"
+  }
+}

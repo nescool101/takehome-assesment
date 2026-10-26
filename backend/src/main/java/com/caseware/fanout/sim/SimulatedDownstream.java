@@ -1,4 +1,4 @@
-package com.caseware.fanout.api;
+package com.caseware.fanout.sim;
 
 import com.caseware.fanout.worker.Job;
 import com.caseware.fanout.worker.Ports.DownstreamClient;

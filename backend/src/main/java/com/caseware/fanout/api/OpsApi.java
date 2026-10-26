@@ -2,13 +2,13 @@ package com.caseware.fanout.api;
 
 import com.caseware.fanout.aws.*;
 import com.caseware.fanout.worker.Job;
+import com.caseware.fanout.worker.Log;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.regex.*;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -18,7 +18,7 @@ import software.amazon.awssdk.services.sqs.model.QueueAttributeName;
 
 /**
  * Ops API on the JDK HttpServer. Offer id = "templateId@version".
- * ponytail: published jobs and decisions are in memory (lost on restart); the real home is the registry/decisions tables.
+ * Published jobs live in the registry table, decisions in the decisions table: nothing is held in process memory.
  */
 public final class OpsApi {
     private final SqsJobSource source;
@@ -28,14 +28,13 @@ public final class OpsApi {
     private static final ObjectMapper JSON = new ObjectMapper();
     private final SqsClient sqs;
     private final String queueUrl, dlqUrl;
-    private final Map<String, Set<Job>> byOffer = new ConcurrentHashMap<>(); // sets: a repeated publish must not double-count
-    private final Map<String, Set<Job>> byEngagement = new ConcurrentHashMap<>();
+    private final DynamoRegistry registry;
     private final java.util.function.Supplier<String> downstreamStats;
     private final String configJson;
     private final HttpServer server;
 
     public OpsApi(int port, SqsJobSource source, DynamoIdempotency idem, DynamoOfferCatalog catalog,
-                  DynamoDecisions decisions, SqsClient sqs, String queueUrl, String dlqUrl,
+                  DynamoDecisions decisions, DynamoRegistry registry, SqsClient sqs, String queueUrl, String dlqUrl,
                   java.util.function.Supplier<String> downstreamStats, String configJson) throws IOException {
         this.downstreamStats = downstreamStats;
         this.configJson = configJson;
@@ -43,11 +42,12 @@ public final class OpsApi {
         this.idem = idem;
         this.catalog = catalog;
         this.decisions = decisions;
+        this.registry = registry;
         this.sqs = sqs;
         this.queueUrl = queueUrl;
         this.dlqUrl = dlqUrl;
         server = HttpServer.create(new InetSocketAddress(port), 0);
-        server.setExecutor(Executors.newCachedThreadPool()); // platform threads: virtual ones share carriers with the worker and starve behind it
+        server.setExecutor(Executors.newFixedThreadPool(32)); // bounded; platform threads: virtual ones share carriers with the worker and starve behind it
         server.createContext("/", this::handle);
     }
 
@@ -57,7 +57,7 @@ public final class OpsApi {
     private static final Pattern ENG = Pattern.compile("/engagements/([^/]+)/(status|decision)");
 
     private void handle(HttpExchange x) throws IOException {
-        x.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
+        if (CORS_ORIGIN != null) x.getResponseHeaders().add("Access-Control-Allow-Origin", CORS_ORIGIN);
         x.getResponseHeaders().add("Access-Control-Allow-Headers", "content-type,x-admin-token");
         x.getResponseHeaders().add("Content-Type", "application/json");
         try {
@@ -65,7 +65,7 @@ public final class OpsApi {
             Matcher o = OFFER.matcher(path), e = ENG.matcher(path);
             if (m.equals("OPTIONS")) send(x, 204, "");
             else if (!authorized(x, m, path)) send(x, 403, err("forbidden"));
-            else if (m.equals("GET") && path.equals("/health")) send(x, 200, "{\"ok\":true}");
+            else if (m.equals("GET") && path.equals("/health")) send(x, 200, obj("ok", true));
             else if (m.equals("GET") && path.equals("/metrics")) send(x, 200, metrics());
             else if (m.equals("POST") && path.equals("/admin/publishes")) publish(x);
             else if (o.matches() && m.equals("GET") && o.group(2).equals("status")) send(x, 200, offerStatus(o.group(1)));
@@ -76,22 +76,33 @@ public final class OpsApi {
         } catch (IllegalArgumentException ex) {
             send(x, 400, err(ex.getMessage()));
         } catch (RuntimeException ex) {
-            send(x, 500, err(String.valueOf(ex.getMessage())));
+            Log.event("error", "http_500", "path", x.getRequestURI().getPath(), "error", ex.toString());
+            send(x, 500, err("internal error"));
         }
     }
 
     /**
      * Mutating calls must be application/json: a cross-site page can only send text/plain without a preflight.
-     * ponytail: ADMIN_TOKEN is a shared secret on /admin/*; swap for real auth (the gateway API key does not cover :8080).
+     * ponytail: ADMIN_TOKEN is a shared secret on /admin/* (required outside LocalStack); swap for real auth (the gateway API key does not cover :8080).
      */
+    /** AWS_ENDPOINT_URL set = LocalStack dev: open admin and CORS "*" as before. Real AWS fails closed. */
+    private static final boolean LOCAL = !System.getenv().getOrDefault("AWS_ENDPOINT_URL", "").isBlank();
+    private static final String CORS_ORIGIN = nonBlank(System.getenv("CORS_ORIGIN"), LOCAL ? "*" : null);
+
+    private static String nonBlank(String v, String d) {
+        return v == null || v.isBlank() ? d : v;
+    }
+
     private static boolean authorized(HttpExchange x, String method, String path) {
         if (method.equals("POST")) {
             String ct = x.getRequestHeaders().getFirst("Content-Type");
             if (ct == null || !ct.toLowerCase().startsWith("application/json")) return false;
         }
         String token = System.getenv("ADMIN_TOKEN");
-        return token == null || token.isBlank() || !path.startsWith("/admin/")
-                || token.equals(x.getRequestHeaders().getFirst("x-admin-token"));
+        if (!path.startsWith("/admin/")) return true;
+        if (token == null || token.isBlank()) return LOCAL; // no token configured: only LocalStack dev leaves /admin open
+        String got = x.getRequestHeaders().getFirst("x-admin-token");
+        return got != null && java.security.MessageDigest.isEqual(token.getBytes(StandardCharsets.UTF_8), got.getBytes(StandardCharsets.UTF_8));
     }
 
     private static final Pattern ID = Pattern.compile("[A-Za-z0-9._:-]{1,128}"); // no '|' '@' quotes or backslashes: ids go into keys and JSON
@@ -128,26 +139,18 @@ public final class OpsApi {
         String offer = tpl + "@" + ver;
         catalog.register(tpl, ver);
         source.sendAll(List.copyOf(batch));
-        // register jobs only after the enqueue succeeded: a failed publish leaves no phantom jobs
-        for (Job j : batch) {
-            byOffer.computeIfAbsent(offer, k -> ConcurrentHashMap.newKeySet()).add(j);
-            byEngagement.computeIfAbsent(j.engagementId(), k -> ConcurrentHashMap.newKeySet()).add(j);
-        }
-        send(x, 202, "{\"offerId\":\"" + offer + "\",\"enqueued\":" + batch.size() + "}");
+        // index only after the enqueue succeeded: a failed publish leaves no phantom jobs; a failed index write -> 500,
+        // the caller republishes and idempotency absorbs the duplicate messages
+        registry.putAll(List.copyOf(batch));
+        send(x, 202, obj("offerId", offer, "enqueued", batch.size()));
     }
 
-    private String offerStatus(String offer) {
+    private Object offerStatus(String offer) {
         String[] p = offerParts(offer);
-        List<Job> jobs = snapshot(byOffer.getOrDefault(offer, Set.of()));
-        long done = idem.countDone(jobs.stream().map(Job::key).toList());
+        long published = registry.countByOffer(offer), done = idem.offerDone(offer);
         boolean w = catalog.isWithdrawn(p[0], p[1]); // the catalog is the source of truth, also after a restart
-        return "{\"offerId\":\"" + offer + "\",\"published\":" + jobs.size() + ",\"done\":" + done
-                + ",\"inFlightOrQueued\":" + (jobs.size() - done) + ",\"withdrawn\":" + w + "}";
-    }
-
-    /** Copy so no lock is held across a DynamoDB call (a slow call used to block every other status request). */
-    private static List<Job> snapshot(Set<Job> s) {
-        return List.copyOf(s);
+        return obj("offerId", offer, "published", published, "done", done,
+                "inFlightOrQueued", published - done, "withdrawn", w);
     }
 
     private static String[] offerParts(String offer) {
@@ -166,21 +169,19 @@ public final class OpsApi {
     }
 
     /** Badge = a fanned-out, not-withdrawn, undecided offer exists. Summary is deterministic text (no LLM). */
-    private String engagementStatus(String eng) {
+    private Object engagementStatus(String eng) {
         List<String> pending = new ArrayList<>();
         for (Job j : pendingJobs(eng)) pending.add(j.templateId() + "@" + j.version());
         String summary = pending.isEmpty() ? "" : "Template update available: " + String.join(", ", pending);
-        return "{\"engagementId\":\"" + eng + "\",\"pending\":" + !pending.isEmpty()
-                + ",\"offers\":" + json(pending) + ",\"summary\":\"" + summary + "\"}";
+        return obj("engagementId", eng, "pending", !pending.isEmpty(), "offers", pending, "summary", summary);
     }
 
     private List<Job> pendingJobs(String eng) {
         id(eng, "engagement id");
-        List<Job> out = new ArrayList<>();
         Set<String> decided = decisions.decidedKeys(eng);
-        for (Job j : snapshot(byEngagement.getOrDefault(eng, Set.of())))
-            if (!decided.contains(j.key()) && idem.isDone(j.key()) && !catalog.isWithdrawn(j.templateId(), j.version())) out.add(j);
-        return out;
+        List<Job> open = registry.byEngagement(eng).stream().filter(j -> !decided.contains(j.key())).toList();
+        Set<String> done = idem.doneKeys(open.stream().map(Job::key).toList());
+        return open.stream().filter(j -> done.contains(j.key()) && !catalog.isWithdrawn(j.templateId(), j.version())).toList();
     }
 
     private void decision(HttpExchange x, String eng) throws IOException {
@@ -192,26 +193,31 @@ public final class OpsApi {
         send(x, 200, engagementStatus(eng));
     }
 
-    private String metrics() {
-        return "{\"queue\":" + depth(queueUrl) + ",\"dlq\":" + depth(dlqUrl) + ",\"published\":"
-                + byOffer.values().stream().mapToInt(Set::size).sum()
-                + ",\"catalogReads\":" + catalog.reads.get() + ",\"downstream\":" + downstreamStats.get() + ",\"config\":" + configJson + "}";
+    private Object metrics() throws IOException {
+        return obj("queue", depth(queueUrl), "dlq", depth(dlqUrl), "published", registry.count(),
+                "catalogReads", catalog.reads.get(), "downstream", JSON.readTree(downstreamStats.get()), "config", JSON.readTree(configJson));
     }
 
-    private String depth(String url) {
+    private Object depth(String url) {
         var a = sqs.getQueueAttributes(b -> b.queueUrl(url).attributeNames(
                 QueueAttributeName.APPROXIMATE_NUMBER_OF_MESSAGES,
                 QueueAttributeName.APPROXIMATE_NUMBER_OF_MESSAGES_NOT_VISIBLE)).attributes();
-        return "{\"visible\":" + a.get(QueueAttributeName.APPROXIMATE_NUMBER_OF_MESSAGES)
-                + ",\"inFlight\":" + a.get(QueueAttributeName.APPROXIMATE_NUMBER_OF_MESSAGES_NOT_VISIBLE) + "}";
+        return obj("visible", a.get(QueueAttributeName.APPROXIMATE_NUMBER_OF_MESSAGES),
+                "inFlight", a.get(QueueAttributeName.APPROXIMATE_NUMBER_OF_MESSAGES_NOT_VISIBLE));
     }
 
-    private static String json(List<String> l) {
-        return "[" + String.join(",", l.stream().map(s -> "\"" + s + "\"").toList()) + "]";
+    private static Map<String, Object> obj(Object... kv) {
+        var m = new LinkedHashMap<String, Object>();
+        for (int i = 0; i < kv.length; i += 2) m.put((String) kv[i], kv[i + 1]);
+        return m;
     }
 
-    private static String err(String m) {
-        return "{\"error\":\"" + m.replace("\\", "/").replace("\"", "'").replaceAll("[\\p{Cntrl}]", " ") + "\"}";
+    private static Object err(String m) {
+        return obj("error", m);
+    }
+
+    private static void send(HttpExchange x, int code, Object body) throws IOException {
+        send(x, code, body instanceof String s ? s : JSON.writeValueAsString(body));
     }
 
     private static void send(HttpExchange x, int code, String body) throws IOException {

@@ -122,6 +122,37 @@ class FanOutWorkerTest {
     }
 
     @Test
+    void halfOpenLetsOneProbeThroughPerCooldown() {
+        long[] t = {0};
+        CircuitBreaker b = new CircuitBreaker(1, 100, () -> t[0]);
+        b.failure();
+        assertTrue(b.coolingDown());
+        t[0] = 100;
+        assertFalse(b.coolingDown());
+        assertTrue(b.allow());  // the probe
+        assertFalse(b.allow()); // everyone else waits
+        b.failure();            // probe failed: open again
+        assertFalse(b.allow());
+        t[0] = 200;
+        assertTrue(b.allow());
+        b.success();
+        assertTrue(b.allow() && b.allow()); // closed
+    }
+
+    @Test
+    void firmShareShrinksWhenMoreFirmsAreActive() {
+        var l = new FirmLimiter(5, 6);
+        assertNotNull(l.tryAcquire("a")); // alone: cap min(5, 6/2) = 3
+        assertNotNull(l.tryAcquire("a"));
+        assertNotNull(l.tryAcquire("a"));
+        assertNull(l.tryAcquire("a"));
+        assertNotNull(l.tryAcquire("b")); // 2 active: share 3
+        assertNotNull(l.tryAcquire("c")); // 3 active: share 2, c has none
+        assertNotNull(l.tryAcquire("c"));
+        assertNull(l.tryAcquire("c"));
+    }
+
+    @Test
     void backoffStaysWithinCap() {
         Backoff b = new Backoff(Duration.ofMillis(100), Duration.ofSeconds(5), new Random(7));
         for (int a = 1; a < 40; a++) {

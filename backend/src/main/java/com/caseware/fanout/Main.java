@@ -3,14 +3,14 @@ package com.caseware.fanout;
 import com.caseware.fanout.api.*;
 import com.caseware.fanout.aws.*;
 import com.caseware.fanout.config.AppConfig;
+import com.caseware.fanout.sim.SimulatedDownstream;
 import com.caseware.fanout.worker.*;
 import java.net.URI;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Random;
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
-import software.amazon.awssdk.regions.Region;
+import java.util.concurrent.atomic.AtomicBoolean;
+import software.amazon.awssdk.awscore.client.builder.AwsClientBuilder;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.QueueAttributeName;
@@ -19,13 +19,10 @@ import software.amazon.awssdk.services.sqs.model.QueueAttributeName;
 public final class Main {
     public static void main(String[] args) throws Exception {
         AppConfig cfg = AppConfig.fromEnv();
-        String ep = env("AWS_ENDPOINT_URL", "http://localhost:4566");
         String name = env("REGION_NAME", "us");
-        var creds = StaticCredentialsProvider.create(AwsBasicCredentials.create(
-                env("AWS_ACCESS_KEY_ID", "test"), env("AWS_SECRET_ACCESS_KEY", "test")));
-        Region region = Region.of(env("AWS_REGION", "us-east-1"));
-        var sqs = SqsClient.builder().endpointOverride(URI.create(ep)).region(region).credentialsProvider(creds).build();
-        var ddb = DynamoDbClient.builder().endpointOverride(URI.create(ep)).region(region).credentialsProvider(creds).build();
+        Log.service = name;
+        var sqs = aws(SqsClient.builder()).build();
+        var ddb = aws(DynamoDbClient.builder()).build();
 
         String q = sqs.getQueueUrl(b -> b.queueName(name + "-fanout")).queueUrl();
         String dlq = sqs.getQueueUrl(b -> b.queueName(name + "-fanout-dlq")).queueUrl();
@@ -35,21 +32,42 @@ public final class Main {
         var source = new SqsJobSource(sqs, q, dlq);
         var idem = new DynamoIdempotency(ddb, name + "-idempotency", Duration.ofSeconds(2L * cfg.visibilityTimeoutSeconds()));
         var decisions = new DynamoDecisions(ddb, name + "-decisions");
+        var registry = new DynamoRegistry(ddb, name + "-registry");
         var catalog = new DynamoOfferCatalog(ddb, name + "-offers",
                 cfg.cacheEnabled() ? Duration.ofSeconds(cfg.cacheTtlSeconds()) : Duration.ZERO);
 
         int permits = cfg.profile().downstreamPermits();
         var downstream = new SimulatedDownstream(cfg.simLatencyMs());
         var worker = new FanOutWorker(source, downstream, idem, catalog,
-                new FirmLimiter(Math.max(1, permits / 2)), // ponytail: fixed half-of-permits per-firm cap, tune from load results
-                new CircuitBreaker(cfg.breakerFailures(), cfg.breakerCooldownMs(), System::currentTimeMillis),
+                new FirmLimiter(Math.max(1, permits / 2), permits), // ponytail: hard cap = half the permits, shrinking to a fair share as more firms are active
+                new CircuitBreaker(cfg.breakerFailures(), cfg.breakerCooldownMs(), System::currentTimeMillis,
+                        new DynamoBreakerStore(ddb, name + "-idempotency",
+                                new net.javacrumbs.shedlock.provider.dynamodb2.DynamoDBLockProvider(ddb, name + "-locks")), 500), // shared by every worker of the region
                 new Backoff(Duration.ofMillis(200), Duration.ofSeconds(30), new Random()),
                 permits, cfg.retryMaxAttempts(), Duration.ofMillis(cfg.deferDelayMs()));
 
-        new OpsApi(Integer.parseInt(env("PORT", "8080")), source, idem, catalog, decisions, sqs, q, dlq,
+        new OpsApi(Integer.parseInt(env("PORT", "8080")), source, idem, catalog, decisions, registry, sqs, q, dlq,
                 downstream::statsJson, configJson(cfg)).start();
-        System.out.println("ops api up, permits=" + permits + " simLatencyMs=" + cfg.simLatencyMs());
-        worker.run(() -> false, 10, Duration.ofMillis(100));
+        Log.event("info", "started", "permits", permits, "simLatencyMs", cfg.simLatencyMs());
+        // SIGTERM (ECS deploy): stop polling, let in-flight loads finish and ack, then exit
+        var stop = new AtomicBoolean();
+        var main = Thread.currentThread();
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            stop.set(true);
+            try {
+                main.join();
+            } catch (InterruptedException ignored) {
+            }
+        }));
+        var metrics = java.util.concurrent.Executors.newSingleThreadScheduledExecutor(r -> {
+            var t = new Thread(r, "metrics");
+            t.setDaemon(true);
+            return t;
+        });
+        metrics.scheduleAtFixedRate(worker::flushMetrics, 60, 60, java.util.concurrent.TimeUnit.SECONDS);
+        worker.run(stop::get, 10, Duration.ofMillis(100));
+        metrics.shutdown();
+        worker.flushMetrics();
     }
 
     private static String configJson(AppConfig c) {
@@ -60,6 +78,12 @@ public final class Main {
                 + ",\"medianPerFirm\":" + p.medianEngagementsPerFirm() + ",\"maxPerFirm\":" + p.maxEngagementsPerFirm() + ",\"cacheEnabled\":" + c.cacheEnabled()
                 + ",\"tier\":\"" + c.tier() + "\",\"budgetCapUsd\":" + c.budgetCapUsd()
                 + ",\"visibilityTimeoutSeconds\":" + c.visibilityTimeoutSeconds() + "}";
+    }
+
+    /** Region and credentials always come from the environment (default AWS chain: env vars, IRSA/pod identity, task role). */
+    private static <B extends AwsClientBuilder<B, ?>> B aws(B b) {
+        String ep = System.getenv("AWS_ENDPOINT_URL");
+        return ep == null || ep.isBlank() ? b : b.endpointOverride(URI.create(ep)); // LocalStack only
     }
 
     private static String env(String k, String d) {
