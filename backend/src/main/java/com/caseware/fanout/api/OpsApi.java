@@ -24,8 +24,8 @@ public final class OpsApi {
     private final DynamoOfferCatalog catalog;
     private final SqsClient sqs;
     private final String queueUrl, dlqUrl;
-    private final Map<String, List<Job>> byOffer = new ConcurrentHashMap<>();
-    private final Map<String, List<Job>> byEngagement = new ConcurrentHashMap<>();
+    private final Map<String, Set<Job>> byOffer = new ConcurrentHashMap<>(); // sets: a repeated publish must not double-count
+    private final Map<String, Set<Job>> byEngagement = new ConcurrentHashMap<>();
     private final Set<String> decided = ConcurrentHashMap.newKeySet(); // job keys applied/declined
     private final java.util.function.Supplier<String> downstreamStats;
     private final String configJson;
@@ -54,12 +54,13 @@ public final class OpsApi {
 
     private void handle(HttpExchange x) throws IOException {
         x.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
-        x.getResponseHeaders().add("Access-Control-Allow-Headers", "content-type");
+        x.getResponseHeaders().add("Access-Control-Allow-Headers", "content-type,x-admin-token");
         x.getResponseHeaders().add("Content-Type", "application/json");
         try {
             String m = x.getRequestMethod(), path = x.getRequestURI().getPath();
             Matcher o = OFFER.matcher(path), e = ENG.matcher(path);
             if (m.equals("OPTIONS")) send(x, 204, "");
+            else if (!authorized(x, m, path)) send(x, 403, err("forbidden"));
             else if (m.equals("GET") && path.equals("/health")) send(x, 200, "{\"ok\":true}");
             else if (m.equals("GET") && path.equals("/metrics")) send(x, 200, metrics());
             else if (m.equals("POST") && path.equals("/admin/publishes")) publish(x);
@@ -75,41 +76,73 @@ public final class OpsApi {
         }
     }
 
-    /** Body: {"templateId":"tpl","version":"v7","engagements":[{"id":"e1","firmId":"f1"},...]} (flat, parsed by regex). */
+    /**
+     * Mutating calls must be application/json: a cross-site page can only send text/plain without a preflight.
+     * ponytail: ADMIN_TOKEN is a shared secret on /admin/*; swap for real auth (the gateway API key does not cover :8080).
+     */
+    private static boolean authorized(HttpExchange x, String method, String path) {
+        if (method.equals("POST")) {
+            String ct = x.getRequestHeaders().getFirst("Content-Type");
+            if (ct == null || !ct.toLowerCase().startsWith("application/json")) return false;
+        }
+        String token = System.getenv("ADMIN_TOKEN");
+        return token == null || token.isBlank() || !path.startsWith("/admin/")
+                || token.equals(x.getRequestHeaders().getFirst("x-admin-token"));
+    }
+
+    private static final Pattern ID = Pattern.compile("[A-Za-z0-9._:-]{1,128}"); // no '|' '@' quotes or backslashes: ids go into keys and JSON
+    private static final Pattern OBJ = Pattern.compile("\\{[^{}]*\\}");
+
+    private static String id(String v, String what) {
+        if (v == null || !ID.matcher(v).matches()) throw new IllegalArgumentException("bad " + what + " (allowed: letters, digits, . _ : -)");
+        return v;
+    }
+
+    /** Body: {"templateId":"tpl","version":"v7","engagements":[{"id":"e1","firmId":"f1"},...]} (flat objects, any field order). */
     private void publish(HttpExchange x) throws IOException {
         String b = new String(x.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
-        String tpl = field(b, "templateId"), ver = field(b, "version");
-        Matcher em = Pattern.compile("\\{\\s*\"id\"\\s*:\\s*\"([^\"]+)\"\\s*,\\s*\"firmId\"\\s*:\\s*\"([^\"]+)\"\\s*\\}").matcher(b);
-        List<Job> batch = new ArrayList<>();
+        String tpl = id(field(b, "templateId"), "templateId"), ver = id(field(b, "version"), "version");
+        int at = b.indexOf("\"engagements\"");
+        if (at < 0) throw new IllegalArgumentException("missing engagements");
+        Set<Job> batch = new LinkedHashSet<>(); // a repeated engagement in the body is one job
+        Matcher em = OBJ.matcher(b.substring(at));
+        while (em.find())
+            batch.add(new Job(id(field(em.group(), "id"), "engagement id"), id(field(em.group(), "firmId"), "firmId"), tpl, ver));
+        if (batch.isEmpty()) throw new IllegalArgumentException("no engagements");
         String offer = tpl + "@" + ver;
-        while (em.find()) {
-            Job j = new Job(em.group(1), em.group(2), tpl, ver);
-            byOffer.computeIfAbsent(offer, k -> Collections.synchronizedList(new ArrayList<>())).add(j);
-            byEngagement.computeIfAbsent(j.engagementId(), k -> Collections.synchronizedList(new ArrayList<>())).add(j);
-            batch.add(j);
+        source.sendAll(List.copyOf(batch));
+        // register only after the enqueue succeeded: a failed publish leaves no phantom jobs
+        for (Job j : batch) {
+            byOffer.computeIfAbsent(offer, k -> ConcurrentHashMap.newKeySet()).add(j);
+            byEngagement.computeIfAbsent(j.engagementId(), k -> ConcurrentHashMap.newKeySet()).add(j);
         }
-        int n = batch.size();
-        source.sendAll(batch);
-        if (n == 0) throw new IllegalArgumentException("no engagements");
-        send(x, 202, "{\"offerId\":\"" + offer + "\",\"enqueued\":" + n + "}");
+        send(x, 202, "{\"offerId\":\"" + offer + "\",\"enqueued\":" + batch.size() + "}");
     }
 
     private String offerStatus(String offer) {
-        List<Job> jobs = snapshot(byOffer.getOrDefault(offer, List.of()));
+        String[] p = offerParts(offer);
+        List<Job> jobs = snapshot(byOffer.getOrDefault(offer, Set.of()));
         long done = idem.countDone(jobs.stream().map(Job::key).toList());
-        boolean w = !jobs.isEmpty() && catalog.isWithdrawn(jobs.get(0).templateId(), jobs.get(0).version());
+        boolean w = catalog.isWithdrawn(p[0], p[1]); // the catalog is the source of truth, also after a restart
         return "{\"offerId\":\"" + offer + "\",\"published\":" + jobs.size() + ",\"done\":" + done
                 + ",\"inFlightOrQueued\":" + (jobs.size() - done) + ",\"withdrawn\":" + w + "}";
     }
 
-    /** Copy under the lock so no lock is held across a DynamoDB call (a slow call used to block every other status request). */
-    private static List<Job> snapshot(List<Job> l) {
-        synchronized (l) { return List.copyOf(l); }
+    /** Copy so no lock is held across a DynamoDB call (a slow call used to block every other status request). */
+    private static List<Job> snapshot(Set<Job> s) {
+        return List.copyOf(s);
+    }
+
+    private static String[] offerParts(String offer) {
+        String[] p = offer.split("@", 2);
+        if (p.length != 2) throw new IllegalArgumentException("offer id must be templateId@version");
+        id(p[0], "templateId");
+        id(p[1], "version");
+        return p;
     }
 
     private void withdraw(HttpExchange x, String offer) throws IOException {
-        String[] p = offer.split("@", 2);
-        if (p.length != 2) throw new IllegalArgumentException("offer id must be templateId@version");
+        String[] p = offerParts(offer);
         catalog.withdraw(p[0], p[1]);
         send(x, 200, offerStatus(offer));
     }
@@ -117,25 +150,33 @@ public final class OpsApi {
     /** Badge = a fanned-out, not-withdrawn, undecided offer exists. Summary is deterministic text (no LLM). */
     private String engagementStatus(String eng) {
         List<String> pending = new ArrayList<>();
-        for (Job j : snapshot(byEngagement.getOrDefault(eng, List.of())))
-            if (!decided.contains(j.key()) && idem.isDone(j.key()) && !catalog.isWithdrawn(j.templateId(), j.version()))
-                pending.add(j.templateId() + "@" + j.version());
+        for (Job j : pendingJobs(eng)) pending.add(j.templateId() + "@" + j.version());
         String summary = pending.isEmpty() ? "" : "Template update available: " + String.join(", ", pending);
         return "{\"engagementId\":\"" + eng + "\",\"pending\":" + !pending.isEmpty()
                 + ",\"offers\":" + json(pending) + ",\"summary\":\"" + summary + "\"}";
+    }
+
+    private List<Job> pendingJobs(String eng) {
+        id(eng, "engagement id");
+        List<Job> out = new ArrayList<>();
+        for (Job j : snapshot(byEngagement.getOrDefault(eng, Set.of())))
+            if (!decided.contains(j.key()) && idem.isDone(j.key()) && !catalog.isWithdrawn(j.templateId(), j.version())) out.add(j);
+        return out;
     }
 
     private void decision(HttpExchange x, String eng) throws IOException {
         String b = new String(x.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
         String action = field(b, "action");
         if (!action.equals("apply") && !action.equals("decline")) throw new IllegalArgumentException("action: apply|decline");
-        for (Job j : byEngagement.getOrDefault(eng, List.of())) decided.add(j.key());
+        // only offers the user could see: one published a moment later must keep its badge
+        // ponytail: apply and decline both just clear the badge (no apply target exists yet); decisions are in memory, the decisions table is the real home
+        for (Job j : pendingJobs(eng)) decided.add(j.key());
         send(x, 200, engagementStatus(eng));
     }
 
     private String metrics() {
         return "{\"queue\":" + depth(queueUrl) + ",\"dlq\":" + depth(dlqUrl) + ",\"published\":"
-                + byOffer.values().stream().mapToInt(List::size).sum()
+                + byOffer.values().stream().mapToInt(Set::size).sum()
                 + ",\"catalogReads\":" + catalog.reads.get() + ",\"downstream\":" + downstreamStats.get() + ",\"config\":" + configJson + "}";
     }
 
@@ -157,7 +198,9 @@ public final class OpsApi {
         return "[" + String.join(",", l.stream().map(s -> "\"" + s + "\"").toList()) + "]";
     }
 
-    private static String err(String m) { return "{\"error\":\"" + m.replace("\"", "'") + "\"}"; }
+    private static String err(String m) {
+        return "{\"error\":\"" + m.replace("\\", "/").replace("\"", "'").replaceAll("[\\p{Cntrl}]", " ") + "\"}";
+    }
 
     private static void send(HttpExchange x, int code, String body) throws IOException {
         byte[] b = body.getBytes(StandardCharsets.UTF_8);

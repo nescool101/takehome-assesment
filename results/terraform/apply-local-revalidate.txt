@@ -1,0 +1,877 @@
+
+Terraform used the selected providers to generate the following execution
+plan. Resource actions are indicated with the following symbols:
+  [32m+[0m create[0m
+
+Terraform will perform the following actions:
+
+[1m  # module.ca.aws_dynamodb_table.checkpoints[0m will be created
+[0m  [32m+[0m[0m resource "aws_dynamodb_table" "checkpoints" {
+      [32m+[0m[0m arn              = (known after apply)
+      [32m+[0m[0m billing_mode     = "PAY_PER_REQUEST"
+      [32m+[0m[0m hash_key         = "packageId"
+      [32m+[0m[0m id               = (known after apply)
+      [32m+[0m[0m name             = "ca-checkpoints"
+      [32m+[0m[0m read_capacity    = (known after apply)
+      [32m+[0m[0m stream_arn       = (known after apply)
+      [32m+[0m[0m stream_label     = (known after apply)
+      [32m+[0m[0m stream_view_type = (known after apply)
+      [32m+[0m[0m tags_all         = (known after apply)
+      [32m+[0m[0m write_capacity   = (known after apply)
+
+      [32m+[0m[0m attribute {
+          [32m+[0m[0m name = "packageId"
+          [32m+[0m[0m type = "S"
+        }
+
+      [32m+[0m[0m point_in_time_recovery (known after apply)
+
+      [32m+[0m[0m server_side_encryption (known after apply)
+
+      [32m+[0m[0m ttl (known after apply)
+    }
+
+[1m  # module.ca.aws_dynamodb_table.decisions[0m will be created
+[0m  [32m+[0m[0m resource "aws_dynamodb_table" "decisions" {
+      [32m+[0m[0m arn              = (known after apply)
+      [32m+[0m[0m billing_mode     = "PAY_PER_REQUEST"
+      [32m+[0m[0m hash_key         = "engagementId"
+      [32m+[0m[0m id               = (known after apply)
+      [32m+[0m[0m name             = "ca-decisions"
+      [32m+[0m[0m range_key        = "decidedAt"
+      [32m+[0m[0m read_capacity    = (known after apply)
+      [32m+[0m[0m stream_arn       = (known after apply)
+      [32m+[0m[0m stream_label     = (known after apply)
+      [32m+[0m[0m stream_view_type = (known after apply)
+      [32m+[0m[0m tags_all         = (known after apply)
+      [32m+[0m[0m write_capacity   = (known after apply)
+
+      [32m+[0m[0m attribute {
+          [32m+[0m[0m name = "decidedAt"
+          [32m+[0m[0m type = "S"
+        }
+      [32m+[0m[0m attribute {
+          [32m+[0m[0m name = "engagementId"
+          [32m+[0m[0m type = "S"
+        }
+
+      [32m+[0m[0m point_in_time_recovery (known after apply)
+
+      [32m+[0m[0m server_side_encryption (known after apply)
+
+      [32m+[0m[0m ttl (known after apply)
+    }
+
+[1m  # module.ca.aws_dynamodb_table.idempotency[0m will be created
+[0m  [32m+[0m[0m resource "aws_dynamodb_table" "idempotency" {
+      [32m+[0m[0m arn              = (known after apply)
+      [32m+[0m[0m billing_mode     = "PAY_PER_REQUEST"
+      [32m+[0m[0m hash_key         = "k"
+      [32m+[0m[0m id               = (known after apply)
+      [32m+[0m[0m name             = "ca-idempotency"
+      [32m+[0m[0m read_capacity    = (known after apply)
+      [32m+[0m[0m stream_arn       = (known after apply)
+      [32m+[0m[0m stream_label     = (known after apply)
+      [32m+[0m[0m stream_view_type = (known after apply)
+      [32m+[0m[0m tags_all         = (known after apply)
+      [32m+[0m[0m write_capacity   = (known after apply)
+
+      [32m+[0m[0m attribute {
+          [32m+[0m[0m name = "k"
+          [32m+[0m[0m type = "S"
+        }
+
+      [32m+[0m[0m point_in_time_recovery (known after apply)
+
+      [32m+[0m[0m server_side_encryption (known after apply)
+
+      [32m+[0m[0m ttl {
+          [32m+[0m[0m attribute_name = "exp"
+          [32m+[0m[0m enabled        = true
+        }
+    }
+
+[1m  # module.ca.aws_dynamodb_table.offers[0m will be created
+[0m  [32m+[0m[0m resource "aws_dynamodb_table" "offers" {
+      [32m+[0m[0m arn              = (known after apply)
+      [32m+[0m[0m billing_mode     = "PAY_PER_REQUEST"
+      [32m+[0m[0m hash_key         = "offerId"
+      [32m+[0m[0m id               = (known after apply)
+      [32m+[0m[0m name             = "ca-offers"
+      [32m+[0m[0m read_capacity    = (known after apply)
+      [32m+[0m[0m stream_arn       = (known after apply)
+      [32m+[0m[0m stream_label     = (known after apply)
+      [32m+[0m[0m stream_view_type = (known after apply)
+      [32m+[0m[0m tags_all         = (known after apply)
+      [32m+[0m[0m write_capacity   = (known after apply)
+
+      [32m+[0m[0m attribute {
+          [32m+[0m[0m name = "offerId"
+          [32m+[0m[0m type = "S"
+        }
+
+      [32m+[0m[0m point_in_time_recovery (known after apply)
+
+      [32m+[0m[0m server_side_encryption (known after apply)
+
+      [32m+[0m[0m ttl (known after apply)
+    }
+
+[1m  # module.ca.aws_dynamodb_table.registry[0m will be created
+[0m  [32m+[0m[0m resource "aws_dynamodb_table" "registry" {
+      [32m+[0m[0m arn              = (known after apply)
+      [32m+[0m[0m billing_mode     = "PAY_PER_REQUEST"
+      [32m+[0m[0m hash_key         = "engagementId"
+      [32m+[0m[0m id               = (known after apply)
+      [32m+[0m[0m name             = "ca-registry"
+      [32m+[0m[0m read_capacity    = (known after apply)
+      [32m+[0m[0m stream_arn       = (known after apply)
+      [32m+[0m[0m stream_label     = (known after apply)
+      [32m+[0m[0m stream_view_type = (known after apply)
+      [32m+[0m[0m tags_all         = (known after apply)
+      [32m+[0m[0m write_capacity   = (known after apply)
+
+      [32m+[0m[0m attribute {
+          [32m+[0m[0m name = "engagementId"
+          [32m+[0m[0m type = "S"
+        }
+      [32m+[0m[0m attribute {
+          [32m+[0m[0m name = "firmId"
+          [32m+[0m[0m type = "S"
+        }
+      [32m+[0m[0m attribute {
+          [32m+[0m[0m name = "templateId"
+          [32m+[0m[0m type = "S"
+        }
+
+      [32m+[0m[0m global_secondary_index {
+          [32m+[0m[0m hash_key           = "firmId"
+          [32m+[0m[0m name               = "firm-template"
+          [32m+[0m[0m non_key_attributes = []
+          [32m+[0m[0m projection_type    = "ALL"
+          [32m+[0m[0m range_key          = "templateId"
+          [32m+[0m[0m read_capacity      = (known after apply)
+          [32m+[0m[0m write_capacity     = (known after apply)
+        }
+
+      [32m+[0m[0m point_in_time_recovery (known after apply)
+
+      [32m+[0m[0m server_side_encryption (known after apply)
+
+      [32m+[0m[0m ttl (known after apply)
+    }
+
+[1m  # module.ca.aws_sqs_queue.dlq[0m will be created
+[0m  [32m+[0m[0m resource "aws_sqs_queue" "dlq" {
+      [32m+[0m[0m arn                               = (known after apply)
+      [32m+[0m[0m content_based_deduplication       = false
+      [32m+[0m[0m deduplication_scope               = (known after apply)
+      [32m+[0m[0m delay_seconds                     = 0
+      [32m+[0m[0m fifo_queue                        = false
+      [32m+[0m[0m fifo_throughput_limit             = (known after apply)
+      [32m+[0m[0m id                                = (known after apply)
+      [32m+[0m[0m kms_data_key_reuse_period_seconds = (known after apply)
+      [32m+[0m[0m max_message_size                  = 262144
+      [32m+[0m[0m message_retention_seconds         = 345600
+      [32m+[0m[0m name                              = "ca-fanout-dlq"
+      [32m+[0m[0m name_prefix                       = (known after apply)
+      [32m+[0m[0m policy                            = (known after apply)
+      [32m+[0m[0m receive_wait_time_seconds         = 0
+      [32m+[0m[0m redrive_allow_policy              = (known after apply)
+      [32m+[0m[0m redrive_policy                    = (known after apply)
+      [32m+[0m[0m sqs_managed_sse_enabled           = (known after apply)
+      [32m+[0m[0m tags_all                          = (known after apply)
+      [32m+[0m[0m url                               = (known after apply)
+      [32m+[0m[0m visibility_timeout_seconds        = 30
+    }
+
+[1m  # module.ca.aws_sqs_queue.work[0m will be created
+[0m  [32m+[0m[0m resource "aws_sqs_queue" "work" {
+      [32m+[0m[0m arn                               = (known after apply)
+      [32m+[0m[0m content_based_deduplication       = false
+      [32m+[0m[0m deduplication_scope               = (known after apply)
+      [32m+[0m[0m delay_seconds                     = 0
+      [32m+[0m[0m fifo_queue                        = false
+      [32m+[0m[0m fifo_throughput_limit             = (known after apply)
+      [32m+[0m[0m id                                = (known after apply)
+      [32m+[0m[0m kms_data_key_reuse_period_seconds = (known after apply)
+      [32m+[0m[0m max_message_size                  = 262144
+      [32m+[0m[0m message_retention_seconds         = 345600
+      [32m+[0m[0m name                              = "ca-fanout"
+      [32m+[0m[0m name_prefix                       = (known after apply)
+      [32m+[0m[0m policy                            = (known after apply)
+      [32m+[0m[0m receive_wait_time_seconds         = 0
+      [32m+[0m[0m redrive_allow_policy              = (known after apply)
+      [32m+[0m[0m redrive_policy                    = (known after apply)
+      [32m+[0m[0m sqs_managed_sse_enabled           = (known after apply)
+      [32m+[0m[0m tags_all                          = (known after apply)
+      [32m+[0m[0m url                               = (known after apply)
+      [32m+[0m[0m visibility_timeout_seconds        = 300
+    }
+
+[1m  # module.eu.aws_dynamodb_table.checkpoints[0m will be created
+[0m  [32m+[0m[0m resource "aws_dynamodb_table" "checkpoints" {
+      [32m+[0m[0m arn              = (known after apply)
+      [32m+[0m[0m billing_mode     = "PAY_PER_REQUEST"
+      [32m+[0m[0m hash_key         = "packageId"
+      [32m+[0m[0m id               = (known after apply)
+      [32m+[0m[0m name             = "eu-checkpoints"
+      [32m+[0m[0m read_capacity    = (known after apply)
+      [32m+[0m[0m stream_arn       = (known after apply)
+      [32m+[0m[0m stream_label     = (known after apply)
+      [32m+[0m[0m stream_view_type = (known after apply)
+      [32m+[0m[0m tags_all         = (known after apply)
+      [32m+[0m[0m write_capacity   = (known after apply)
+
+      [32m+[0m[0m attribute {
+          [32m+[0m[0m name = "packageId"
+          [32m+[0m[0m type = "S"
+        }
+
+      [32m+[0m[0m point_in_time_recovery (known after apply)
+
+      [32m+[0m[0m server_side_encryption (known after apply)
+
+      [32m+[0m[0m ttl (known after apply)
+    }
+
+[1m  # module.eu.aws_dynamodb_table.decisions[0m will be created
+[0m  [32m+[0m[0m resource "aws_dynamodb_table" "decisions" {
+      [32m+[0m[0m arn              = (known after apply)
+      [32m+[0m[0m billing_mode     = "PAY_PER_REQUEST"
+      [32m+[0m[0m hash_key         = "engagementId"
+      [32m+[0m[0m id               = (known after apply)
+      [32m+[0m[0m name             = "eu-decisions"
+      [32m+[0m[0m range_key        = "decidedAt"
+      [32m+[0m[0m read_capacity    = (known after apply)
+      [32m+[0m[0m stream_arn       = (known after apply)
+      [32m+[0m[0m stream_label     = (known after apply)
+      [32m+[0m[0m stream_view_type = (known after apply)
+      [32m+[0m[0m tags_all         = (known after apply)
+      [32m+[0m[0m write_capacity   = (known after apply)
+
+      [32m+[0m[0m attribute {
+          [32m+[0m[0m name = "decidedAt"
+          [32m+[0m[0m type = "S"
+        }
+      [32m+[0m[0m attribute {
+          [32m+[0m[0m name = "engagementId"
+          [32m+[0m[0m type = "S"
+        }
+
+      [32m+[0m[0m point_in_time_recovery (known after apply)
+
+      [32m+[0m[0m server_side_encryption (known after apply)
+
+      [32m+[0m[0m ttl (known after apply)
+    }
+
+[1m  # module.eu.aws_dynamodb_table.idempotency[0m will be created
+[0m  [32m+[0m[0m resource "aws_dynamodb_table" "idempotency" {
+      [32m+[0m[0m arn              = (known after apply)
+      [32m+[0m[0m billing_mode     = "PAY_PER_REQUEST"
+      [32m+[0m[0m hash_key         = "k"
+      [32m+[0m[0m id               = (known after apply)
+      [32m+[0m[0m name             = "eu-idempotency"
+      [32m+[0m[0m read_capacity    = (known after apply)
+      [32m+[0m[0m stream_arn       = (known after apply)
+      [32m+[0m[0m stream_label     = (known after apply)
+      [32m+[0m[0m stream_view_type = (known after apply)
+      [32m+[0m[0m tags_all         = (known after apply)
+      [32m+[0m[0m write_capacity   = (known after apply)
+
+      [32m+[0m[0m attribute {
+          [32m+[0m[0m name = "k"
+          [32m+[0m[0m type = "S"
+        }
+
+      [32m+[0m[0m point_in_time_recovery (known after apply)
+
+      [32m+[0m[0m server_side_encryption (known after apply)
+
+      [32m+[0m[0m ttl {
+          [32m+[0m[0m attribute_name = "exp"
+          [32m+[0m[0m enabled        = true
+        }
+    }
+
+[1m  # module.eu.aws_dynamodb_table.offers[0m will be created
+[0m  [32m+[0m[0m resource "aws_dynamodb_table" "offers" {
+      [32m+[0m[0m arn              = (known after apply)
+      [32m+[0m[0m billing_mode     = "PAY_PER_REQUEST"
+      [32m+[0m[0m hash_key         = "offerId"
+      [32m+[0m[0m id               = (known after apply)
+      [32m+[0m[0m name             = "eu-offers"
+      [32m+[0m[0m read_capacity    = (known after apply)
+      [32m+[0m[0m stream_arn       = (known after apply)
+      [32m+[0m[0m stream_label     = (known after apply)
+      [32m+[0m[0m stream_view_type = (known after apply)
+      [32m+[0m[0m tags_all         = (known after apply)
+      [32m+[0m[0m write_capacity   = (known after apply)
+
+      [32m+[0m[0m attribute {
+          [32m+[0m[0m name = "offerId"
+          [32m+[0m[0m type = "S"
+        }
+
+      [32m+[0m[0m point_in_time_recovery (known after apply)
+
+      [32m+[0m[0m server_side_encryption (known after apply)
+
+      [32m+[0m[0m ttl (known after apply)
+    }
+
+[1m  # module.eu.aws_dynamodb_table.registry[0m will be created
+[0m  [32m+[0m[0m resource "aws_dynamodb_table" "registry" {
+      [32m+[0m[0m arn              = (known after apply)
+      [32m+[0m[0m billing_mode     = "PAY_PER_REQUEST"
+      [32m+[0m[0m hash_key         = "engagementId"
+      [32m+[0m[0m id               = (known after apply)
+      [32m+[0m[0m name             = "eu-registry"
+      [32m+[0m[0m read_capacity    = (known after apply)
+      [32m+[0m[0m stream_arn       = (known after apply)
+      [32m+[0m[0m stream_label     = (known after apply)
+      [32m+[0m[0m stream_view_type = (known after apply)
+      [32m+[0m[0m tags_all         = (known after apply)
+      [32m+[0m[0m write_capacity   = (known after apply)
+
+      [32m+[0m[0m attribute {
+          [32m+[0m[0m name = "engagementId"
+          [32m+[0m[0m type = "S"
+        }
+      [32m+[0m[0m attribute {
+          [32m+[0m[0m name = "firmId"
+          [32m+[0m[0m type = "S"
+        }
+      [32m+[0m[0m attribute {
+          [32m+[0m[0m name = "templateId"
+          [32m+[0m[0m type = "S"
+        }
+
+      [32m+[0m[0m global_secondary_index {
+          [32m+[0m[0m hash_key           = "firmId"
+          [32m+[0m[0m name               = "firm-template"
+          [32m+[0m[0m non_key_attributes = []
+          [32m+[0m[0m projection_type    = "ALL"
+          [32m+[0m[0m range_key          = "templateId"
+          [32m+[0m[0m read_capacity      = (known after apply)
+          [32m+[0m[0m write_capacity     = (known after apply)
+        }
+
+      [32m+[0m[0m point_in_time_recovery (known after apply)
+
+      [32m+[0m[0m server_side_encryption (known after apply)
+
+      [32m+[0m[0m ttl (known after apply)
+    }
+
+[1m  # module.eu.aws_sqs_queue.dlq[0m will be created
+[0m  [32m+[0m[0m resource "aws_sqs_queue" "dlq" {
+      [32m+[0m[0m arn                               = (known after apply)
+      [32m+[0m[0m content_based_deduplication       = false
+      [32m+[0m[0m deduplication_scope               = (known after apply)
+      [32m+[0m[0m delay_seconds                     = 0
+      [32m+[0m[0m fifo_queue                        = false
+      [32m+[0m[0m fifo_throughput_limit             = (known after apply)
+      [32m+[0m[0m id                                = (known after apply)
+      [32m+[0m[0m kms_data_key_reuse_period_seconds = (known after apply)
+      [32m+[0m[0m max_message_size                  = 262144
+      [32m+[0m[0m message_retention_seconds         = 345600
+      [32m+[0m[0m name                              = "eu-fanout-dlq"
+      [32m+[0m[0m name_prefix                       = (known after apply)
+      [32m+[0m[0m policy                            = (known after apply)
+      [32m+[0m[0m receive_wait_time_seconds         = 0
+      [32m+[0m[0m redrive_allow_policy              = (known after apply)
+      [32m+[0m[0m redrive_policy                    = (known after apply)
+      [32m+[0m[0m sqs_managed_sse_enabled           = (known after apply)
+      [32m+[0m[0m tags_all                          = (known after apply)
+      [32m+[0m[0m url                               = (known after apply)
+      [32m+[0m[0m visibility_timeout_seconds        = 30
+    }
+
+[1m  # module.eu.aws_sqs_queue.work[0m will be created
+[0m  [32m+[0m[0m resource "aws_sqs_queue" "work" {
+      [32m+[0m[0m arn                               = (known after apply)
+      [32m+[0m[0m content_based_deduplication       = false
+      [32m+[0m[0m deduplication_scope               = (known after apply)
+      [32m+[0m[0m delay_seconds                     = 0
+      [32m+[0m[0m fifo_queue                        = false
+      [32m+[0m[0m fifo_throughput_limit             = (known after apply)
+      [32m+[0m[0m id                                = (known after apply)
+      [32m+[0m[0m kms_data_key_reuse_period_seconds = (known after apply)
+      [32m+[0m[0m max_message_size                  = 262144
+      [32m+[0m[0m message_retention_seconds         = 345600
+      [32m+[0m[0m name                              = "eu-fanout"
+      [32m+[0m[0m name_prefix                       = (known after apply)
+      [32m+[0m[0m policy                            = (known after apply)
+      [32m+[0m[0m receive_wait_time_seconds         = 0
+      [32m+[0m[0m redrive_allow_policy              = (known after apply)
+      [32m+[0m[0m redrive_policy                    = (known after apply)
+      [32m+[0m[0m sqs_managed_sse_enabled           = (known after apply)
+      [32m+[0m[0m tags_all                          = (known after apply)
+      [32m+[0m[0m url                               = (known after apply)
+      [32m+[0m[0m visibility_timeout_seconds        = 300
+    }
+
+[1m  # module.gateway.aws_api_gateway_api_key.ops[0m will be created
+[0m  [32m+[0m[0m resource "aws_api_gateway_api_key" "ops" {
+      [32m+[0m[0m arn               = (known after apply)
+      [32m+[0m[0m created_date      = (known after apply)
+      [32m+[0m[0m description       = "Managed by Terraform"
+      [32m+[0m[0m enabled           = true
+      [32m+[0m[0m id                = (known after apply)
+      [32m+[0m[0m last_updated_date = (known after apply)
+      [32m+[0m[0m name              = "us-ops-key"
+      [32m+[0m[0m tags_all          = (known after apply)
+      [32m+[0m[0m value             = (sensitive value)
+    }
+
+[1m  # module.gateway.aws_api_gateway_deployment.d[0m will be created
+[0m  [32m+[0m[0m resource "aws_api_gateway_deployment" "d" {
+      [32m+[0m[0m created_date  = (known after apply)
+      [32m+[0m[0m execution_arn = (known after apply)
+      [32m+[0m[0m id            = (known after apply)
+      [32m+[0m[0m invoke_url    = (known after apply)
+      [32m+[0m[0m rest_api_id   = (known after apply)
+      [32m+[0m[0m triggers      = (known after apply)
+    }
+
+[1m  # module.gateway.aws_api_gateway_integration.backend[0m will be created
+[0m  [32m+[0m[0m resource "aws_api_gateway_integration" "backend" {
+      [32m+[0m[0m cache_namespace         = (known after apply)
+      [32m+[0m[0m connection_type         = "INTERNET"
+      [32m+[0m[0m http_method             = "ANY"
+      [32m+[0m[0m id                      = (known after apply)
+      [32m+[0m[0m integration_http_method = "ANY"
+      [32m+[0m[0m passthrough_behavior    = (known after apply)
+      [32m+[0m[0m request_parameters      = {
+          [32m+[0m[0m "integration.request.path.proxy" = "method.request.path.proxy"
+        }
+      [32m+[0m[0m resource_id             = (known after apply)
+      [32m+[0m[0m rest_api_id             = (known after apply)
+      [32m+[0m[0m timeout_milliseconds    = 29000
+      [32m+[0m[0m type                    = "HTTP_PROXY"
+      [32m+[0m[0m uri                     = "http://host.docker.internal:8080/{proxy}"
+    }
+
+[1m  # module.gateway.aws_api_gateway_integration.backend_options[0m will be created
+[0m  [32m+[0m[0m resource "aws_api_gateway_integration" "backend_options" {
+      [32m+[0m[0m cache_namespace         = (known after apply)
+      [32m+[0m[0m connection_type         = "INTERNET"
+      [32m+[0m[0m http_method             = "OPTIONS"
+      [32m+[0m[0m id                      = (known after apply)
+      [32m+[0m[0m integration_http_method = "OPTIONS"
+      [32m+[0m[0m passthrough_behavior    = (known after apply)
+      [32m+[0m[0m request_parameters      = {
+          [32m+[0m[0m "integration.request.path.proxy" = "method.request.path.proxy"
+        }
+      [32m+[0m[0m resource_id             = (known after apply)
+      [32m+[0m[0m rest_api_id             = (known after apply)
+      [32m+[0m[0m timeout_milliseconds    = 29000
+      [32m+[0m[0m type                    = "HTTP_PROXY"
+      [32m+[0m[0m uri                     = "http://host.docker.internal:8080/{proxy}"
+    }
+
+[1m  # module.gateway.aws_api_gateway_method.any[0m will be created
+[0m  [32m+[0m[0m resource "aws_api_gateway_method" "any" {
+      [32m+[0m[0m api_key_required   = true
+      [32m+[0m[0m authorization      = "NONE"
+      [32m+[0m[0m http_method        = "ANY"
+      [32m+[0m[0m id                 = (known after apply)
+      [32m+[0m[0m request_parameters = {
+          [32m+[0m[0m "method.request.path.proxy" = true
+        }
+      [32m+[0m[0m resource_id        = (known after apply)
+      [32m+[0m[0m rest_api_id        = (known after apply)
+    }
+
+[1m  # module.gateway.aws_api_gateway_method.options[0m will be created
+[0m  [32m+[0m[0m resource "aws_api_gateway_method" "options" {
+      [32m+[0m[0m api_key_required   = false
+      [32m+[0m[0m authorization      = "NONE"
+      [32m+[0m[0m http_method        = "OPTIONS"
+      [32m+[0m[0m id                 = (known after apply)
+      [32m+[0m[0m request_parameters = {
+          [32m+[0m[0m "method.request.path.proxy" = true
+        }
+      [32m+[0m[0m resource_id        = (known after apply)
+      [32m+[0m[0m rest_api_id        = (known after apply)
+    }
+
+[1m  # module.gateway.aws_api_gateway_resource.proxy[0m will be created
+[0m  [32m+[0m[0m resource "aws_api_gateway_resource" "proxy" {
+      [32m+[0m[0m id          = (known after apply)
+      [32m+[0m[0m parent_id   = (known after apply)
+      [32m+[0m[0m path        = (known after apply)
+      [32m+[0m[0m path_part   = "{proxy+}"
+      [32m+[0m[0m rest_api_id = (known after apply)
+    }
+
+[1m  # module.gateway.aws_api_gateway_rest_api.ops[0m will be created
+[0m  [32m+[0m[0m resource "aws_api_gateway_rest_api" "ops" {
+      [32m+[0m[0m api_key_source               = (known after apply)
+      [32m+[0m[0m arn                          = (known after apply)
+      [32m+[0m[0m binary_media_types           = (known after apply)
+      [32m+[0m[0m created_date                 = (known after apply)
+      [32m+[0m[0m description                  = (known after apply)
+      [32m+[0m[0m disable_execute_api_endpoint = (known after apply)
+      [32m+[0m[0m execution_arn                = (known after apply)
+      [32m+[0m[0m id                           = (known after apply)
+      [32m+[0m[0m minimum_compression_size     = (known after apply)
+      [32m+[0m[0m name                         = "us-ops-api"
+      [32m+[0m[0m policy                       = (known after apply)
+      [32m+[0m[0m root_resource_id             = (known after apply)
+      [32m+[0m[0m tags_all                     = (known after apply)
+
+      [32m+[0m[0m endpoint_configuration (known after apply)
+    }
+
+[1m  # module.gateway.aws_api_gateway_stage.v1[0m will be created
+[0m  [32m+[0m[0m resource "aws_api_gateway_stage" "v1" {
+      [32m+[0m[0m arn           = (known after apply)
+      [32m+[0m[0m deployment_id = (known after apply)
+      [32m+[0m[0m execution_arn = (known after apply)
+      [32m+[0m[0m id            = (known after apply)
+      [32m+[0m[0m invoke_url    = (known after apply)
+      [32m+[0m[0m rest_api_id   = (known after apply)
+      [32m+[0m[0m stage_name    = "v1"
+      [32m+[0m[0m tags_all      = (known after apply)
+      [32m+[0m[0m web_acl_arn   = (known after apply)
+    }
+
+[1m  # module.gateway.aws_api_gateway_usage_plan.plan[0m will be created
+[0m  [32m+[0m[0m resource "aws_api_gateway_usage_plan" "plan" {
+      [32m+[0m[0m arn      = (known after apply)
+      [32m+[0m[0m id       = (known after apply)
+      [32m+[0m[0m name     = "us-ops-plan"
+      [32m+[0m[0m tags_all = (known after apply)
+
+      [32m+[0m[0m api_stages {
+          [32m+[0m[0m api_id = (known after apply)
+          [32m+[0m[0m stage  = "v1"
+        }
+
+      [32m+[0m[0m quota_settings {
+          [32m+[0m[0m limit  = 100000
+          [32m+[0m[0m offset = 0
+          [32m+[0m[0m period = "DAY"
+        }
+
+      [32m+[0m[0m throttle_settings {
+          [32m+[0m[0m burst_limit = 100
+          [32m+[0m[0m rate_limit  = 50
+        }
+    }
+
+[1m  # module.gateway.aws_api_gateway_usage_plan_key.k[0m will be created
+[0m  [32m+[0m[0m resource "aws_api_gateway_usage_plan_key" "k" {
+      [32m+[0m[0m id            = (known after apply)
+      [32m+[0m[0m key_id        = (known after apply)
+      [32m+[0m[0m key_type      = "API_KEY"
+      [32m+[0m[0m name          = (known after apply)
+      [32m+[0m[0m usage_plan_id = (known after apply)
+      [32m+[0m[0m value         = (known after apply)
+    }
+
+[1m  # module.us.aws_dynamodb_table.checkpoints[0m will be created
+[0m  [32m+[0m[0m resource "aws_dynamodb_table" "checkpoints" {
+      [32m+[0m[0m arn              = (known after apply)
+      [32m+[0m[0m billing_mode     = "PAY_PER_REQUEST"
+      [32m+[0m[0m hash_key         = "packageId"
+      [32m+[0m[0m id               = (known after apply)
+      [32m+[0m[0m name             = "us-checkpoints"
+      [32m+[0m[0m read_capacity    = (known after apply)
+      [32m+[0m[0m stream_arn       = (known after apply)
+      [32m+[0m[0m stream_label     = (known after apply)
+      [32m+[0m[0m stream_view_type = (known after apply)
+      [32m+[0m[0m tags_all         = (known after apply)
+      [32m+[0m[0m write_capacity   = (known after apply)
+
+      [32m+[0m[0m attribute {
+          [32m+[0m[0m name = "packageId"
+          [32m+[0m[0m type = "S"
+        }
+
+      [32m+[0m[0m point_in_time_recovery (known after apply)
+
+      [32m+[0m[0m server_side_encryption (known after apply)
+
+      [32m+[0m[0m ttl (known after apply)
+    }
+
+[1m  # module.us.aws_dynamodb_table.decisions[0m will be created
+[0m  [32m+[0m[0m resource "aws_dynamodb_table" "decisions" {
+      [32m+[0m[0m arn              = (known after apply)
+      [32m+[0m[0m billing_mode     = "PAY_PER_REQUEST"
+      [32m+[0m[0m hash_key         = "engagementId"
+      [32m+[0m[0m id               = (known after apply)
+      [32m+[0m[0m name             = "us-decisions"
+      [32m+[0m[0m range_key        = "decidedAt"
+      [32m+[0m[0m read_capacity    = (known after apply)
+      [32m+[0m[0m stream_arn       = (known after apply)
+      [32m+[0m[0m stream_label     = (known after apply)
+      [32m+[0m[0m stream_view_type = (known after apply)
+      [32m+[0m[0m tags_all         = (known after apply)
+      [32m+[0m[0m write_capacity   = (known after apply)
+
+      [32m+[0m[0m attribute {
+          [32m+[0m[0m name = "decidedAt"
+          [32m+[0m[0m type = "S"
+        }
+      [32m+[0m[0m attribute {
+          [32m+[0m[0m name = "engagementId"
+          [32m+[0m[0m type = "S"
+        }
+
+      [32m+[0m[0m point_in_time_recovery (known after apply)
+
+      [32m+[0m[0m server_side_encryption (known after apply)
+
+      [32m+[0m[0m ttl (known after apply)
+    }
+
+[1m  # module.us.aws_dynamodb_table.idempotency[0m will be created
+[0m  [32m+[0m[0m resource "aws_dynamodb_table" "idempotency" {
+      [32m+[0m[0m arn              = (known after apply)
+      [32m+[0m[0m billing_mode     = "PAY_PER_REQUEST"
+      [32m+[0m[0m hash_key         = "k"
+      [32m+[0m[0m id               = (known after apply)
+      [32m+[0m[0m name             = "us-idempotency"
+      [32m+[0m[0m read_capacity    = (known after apply)
+      [32m+[0m[0m stream_arn       = (known after apply)
+      [32m+[0m[0m stream_label     = (known after apply)
+      [32m+[0m[0m stream_view_type = (known after apply)
+      [32m+[0m[0m tags_all         = (known after apply)
+      [32m+[0m[0m write_capacity   = (known after apply)
+
+      [32m+[0m[0m attribute {
+          [32m+[0m[0m name = "k"
+          [32m+[0m[0m type = "S"
+        }
+
+      [32m+[0m[0m point_in_time_recovery (known after apply)
+
+      [32m+[0m[0m server_side_encryption (known after apply)
+
+      [32m+[0m[0m ttl {
+          [32m+[0m[0m attribute_name = "exp"
+          [32m+[0m[0m enabled        = true
+        }
+    }
+
+[1m  # module.us.aws_dynamodb_table.offers[0m will be created
+[0m  [32m+[0m[0m resource "aws_dynamodb_table" "offers" {
+      [32m+[0m[0m arn              = (known after apply)
+      [32m+[0m[0m billing_mode     = "PAY_PER_REQUEST"
+      [32m+[0m[0m hash_key         = "offerId"
+      [32m+[0m[0m id               = (known after apply)
+      [32m+[0m[0m name             = "us-offers"
+      [32m+[0m[0m read_capacity    = (known after apply)
+      [32m+[0m[0m stream_arn       = (known after apply)
+      [32m+[0m[0m stream_label     = (known after apply)
+      [32m+[0m[0m stream_view_type = (known after apply)
+      [32m+[0m[0m tags_all         = (known after apply)
+      [32m+[0m[0m write_capacity   = (known after apply)
+
+      [32m+[0m[0m attribute {
+          [32m+[0m[0m name = "offerId"
+          [32m+[0m[0m type = "S"
+        }
+
+      [32m+[0m[0m point_in_time_recovery (known after apply)
+
+      [32m+[0m[0m server_side_encryption (known after apply)
+
+      [32m+[0m[0m ttl (known after apply)
+    }
+
+[1m  # module.us.aws_dynamodb_table.registry[0m will be created
+[0m  [32m+[0m[0m resource "aws_dynamodb_table" "registry" {
+      [32m+[0m[0m arn              = (known after apply)
+      [32m+[0m[0m billing_mode     = "PAY_PER_REQUEST"
+      [32m+[0m[0m hash_key         = "engagementId"
+      [32m+[0m[0m id               = (known after apply)
+      [32m+[0m[0m name             = "us-registry"
+      [32m+[0m[0m read_capacity    = (known after apply)
+      [32m+[0m[0m stream_arn       = (known after apply)
+      [32m+[0m[0m stream_label     = (known after apply)
+      [32m+[0m[0m stream_view_type = (known after apply)
+      [32m+[0m[0m tags_all         = (known after apply)
+      [32m+[0m[0m write_capacity   = (known after apply)
+
+      [32m+[0m[0m attribute {
+          [32m+[0m[0m name = "engagementId"
+          [32m+[0m[0m type = "S"
+        }
+      [32m+[0m[0m attribute {
+          [32m+[0m[0m name = "firmId"
+          [32m+[0m[0m type = "S"
+        }
+      [32m+[0m[0m attribute {
+          [32m+[0m[0m name = "templateId"
+          [32m+[0m[0m type = "S"
+        }
+
+      [32m+[0m[0m global_secondary_index {
+          [32m+[0m[0m hash_key           = "firmId"
+          [32m+[0m[0m name               = "firm-template"
+          [32m+[0m[0m non_key_attributes = []
+          [32m+[0m[0m projection_type    = "ALL"
+          [32m+[0m[0m range_key          = "templateId"
+          [32m+[0m[0m read_capacity      = (known after apply)
+          [32m+[0m[0m write_capacity     = (known after apply)
+        }
+
+      [32m+[0m[0m point_in_time_recovery (known after apply)
+
+      [32m+[0m[0m server_side_encryption (known after apply)
+
+      [32m+[0m[0m ttl (known after apply)
+    }
+
+[1m  # module.us.aws_sqs_queue.dlq[0m will be created
+[0m  [32m+[0m[0m resource "aws_sqs_queue" "dlq" {
+      [32m+[0m[0m arn                               = (known after apply)
+      [32m+[0m[0m content_based_deduplication       = false
+      [32m+[0m[0m deduplication_scope               = (known after apply)
+      [32m+[0m[0m delay_seconds                     = 0
+      [32m+[0m[0m fifo_queue                        = false
+      [32m+[0m[0m fifo_throughput_limit             = (known after apply)
+      [32m+[0m[0m id                                = (known after apply)
+      [32m+[0m[0m kms_data_key_reuse_period_seconds = (known after apply)
+      [32m+[0m[0m max_message_size                  = 262144
+      [32m+[0m[0m message_retention_seconds         = 345600
+      [32m+[0m[0m name                              = "us-fanout-dlq"
+      [32m+[0m[0m name_prefix                       = (known after apply)
+      [32m+[0m[0m policy                            = (known after apply)
+      [32m+[0m[0m receive_wait_time_seconds         = 0
+      [32m+[0m[0m redrive_allow_policy              = (known after apply)
+      [32m+[0m[0m redrive_policy                    = (known after apply)
+      [32m+[0m[0m sqs_managed_sse_enabled           = (known after apply)
+      [32m+[0m[0m tags_all                          = (known after apply)
+      [32m+[0m[0m url                               = (known after apply)
+      [32m+[0m[0m visibility_timeout_seconds        = 30
+    }
+
+[1m  # module.us.aws_sqs_queue.work[0m will be created
+[0m  [32m+[0m[0m resource "aws_sqs_queue" "work" {
+      [32m+[0m[0m arn                               = (known after apply)
+      [32m+[0m[0m content_based_deduplication       = false
+      [32m+[0m[0m deduplication_scope               = (known after apply)
+      [32m+[0m[0m delay_seconds                     = 0
+      [32m+[0m[0m fifo_queue                        = false
+      [32m+[0m[0m fifo_throughput_limit             = (known after apply)
+      [32m+[0m[0m id                                = (known after apply)
+      [32m+[0m[0m kms_data_key_reuse_period_seconds = (known after apply)
+      [32m+[0m[0m max_message_size                  = 262144
+      [32m+[0m[0m message_retention_seconds         = 345600
+      [32m+[0m[0m name                              = "us-fanout"
+      [32m+[0m[0m name_prefix                       = (known after apply)
+      [32m+[0m[0m policy                            = (known after apply)
+      [32m+[0m[0m receive_wait_time_seconds         = 0
+      [32m+[0m[0m redrive_allow_policy              = (known after apply)
+      [32m+[0m[0m redrive_policy                    = (known after apply)
+      [32m+[0m[0m sqs_managed_sse_enabled           = (known after apply)
+      [32m+[0m[0m tags_all                          = (known after apply)
+      [32m+[0m[0m url                               = (known after apply)
+      [32m+[0m[0m visibility_timeout_seconds        = 300
+    }
+
+[1mPlan:[0m [0m32 to add, 0 to change, 0 to destroy.
+
+Changes to Outputs:
+  [32m+[0m[0m gateway_key_id = (known after apply)
+  [32m+[0m[0m gateway_url    = (known after apply)
+  [32m+[0m[0m queues         = {
+      [32m+[0m[0m ca = (known after apply)
+      [32m+[0m[0m eu = (known after apply)
+      [32m+[0m[0m us = (known after apply)
+    }
+[0m[1mmodule.ca.aws_sqs_queue.dlq: Creating...[0m[0m
+[0m[1mmodule.ca.aws_dynamodb_table.offers: Creating...[0m[0m
+[0m[1mmodule.ca.aws_dynamodb_table.idempotency: Creating...[0m[0m
+[0m[1mmodule.ca.aws_dynamodb_table.checkpoints: Creating...[0m[0m
+[0m[1mmodule.ca.aws_dynamodb_table.decisions: Creating...[0m[0m
+[0m[1mmodule.ca.aws_dynamodb_table.registry: Creating...[0m[0m
+[0m[1mmodule.gateway.aws_api_gateway_rest_api.ops: Creating...[0m[0m
+[0m[1mmodule.us.aws_dynamodb_table.idempotency: Creating...[0m[0m
+[0m[1mmodule.us.aws_dynamodb_table.registry: Creating...[0m[0m
+[0m[1mmodule.gateway.aws_api_gateway_api_key.ops: Creating...[0m[0m
+[0m[1mmodule.ca.aws_dynamodb_table.offers: Creation complete after 2s [id=ca-offers][0m
+[0m[1mmodule.us.aws_sqs_queue.dlq: Creating...[0m[0m
+[0m[1mmodule.ca.aws_dynamodb_table.checkpoints: Creation complete after 2s [id=ca-checkpoints][0m
+[0m[1mmodule.ca.aws_dynamodb_table.registry: Creation complete after 2s [id=ca-registry][0m
+[0m[1mmodule.ca.aws_dynamodb_table.decisions: Creation complete after 2s [id=ca-decisions][0m
+[0m[1mmodule.us.aws_dynamodb_table.offers: Creating...[0m[0m
+[0m[1mmodule.us.aws_dynamodb_table.decisions: Creating...[0m[0m
+[0m[1mmodule.us.aws_dynamodb_table.checkpoints: Creating...[0m[0m
+[0m[1mmodule.ca.aws_dynamodb_table.idempotency: Creation complete after 2s [id=ca-idempotency][0m
+[0m[1mmodule.eu.aws_dynamodb_table.offers: Creating...[0m[0m
+[0m[1mmodule.us.aws_dynamodb_table.offers: Creation complete after 0s [id=us-offers][0m
+[0m[1mmodule.us.aws_dynamodb_table.idempotency: Creation complete after 2s [id=us-idempotency][0m
+[0m[1mmodule.us.aws_dynamodb_table.decisions: Creation complete after 0s [id=us-decisions][0m
+[0m[1mmodule.eu.aws_sqs_queue.dlq: Creating...[0m[0m
+[0m[1mmodule.us.aws_dynamodb_table.registry: Creation complete after 2s [id=us-registry][0m
+[0m[1mmodule.eu.aws_dynamodb_table.decisions: Creating...[0m[0m
+[0m[1mmodule.us.aws_dynamodb_table.checkpoints: Creation complete after 0s [id=us-checkpoints][0m
+[0m[1mmodule.eu.aws_dynamodb_table.checkpoints: Creating...[0m[0m
+[0m[1mmodule.eu.aws_dynamodb_table.idempotency: Creating...[0m[0m
+[0m[1mmodule.eu.aws_dynamodb_table.registry: Creating...[0m[0m
+[0m[1mmodule.eu.aws_dynamodb_table.offers: Creation complete after 0s [id=eu-offers][0m
+[0m[1mmodule.eu.aws_dynamodb_table.checkpoints: Creation complete after 0s [id=eu-checkpoints][0m
+[0m[1mmodule.eu.aws_dynamodb_table.decisions: Creation complete after 0s [id=eu-decisions][0m
+[0m[1mmodule.eu.aws_dynamodb_table.registry: Creation complete after 0s [id=eu-registry][0m
+[0m[1mmodule.eu.aws_dynamodb_table.idempotency: Creation complete after 0s [id=eu-idempotency][0m
+[0m[1mmodule.gateway.aws_api_gateway_api_key.ops: Creation complete after 3s [id=p4dafensq3][0m
+[0m[1mmodule.gateway.aws_api_gateway_rest_api.ops: Creation complete after 3s [id=ca6egsm1rz][0m
+[0m[1mmodule.gateway.aws_api_gateway_resource.proxy: Creating...[0m[0m
+[0m[1mmodule.gateway.aws_api_gateway_resource.proxy: Creation complete after 0s [id=mpqvcyrfvl][0m
+[0m[1mmodule.gateway.aws_api_gateway_method.options: Creating...[0m[0m
+[0m[1mmodule.gateway.aws_api_gateway_method.any: Creating...[0m[0m
+[0m[1mmodule.gateway.aws_api_gateway_method.any: Creation complete after 0s [id=agm-ca6egsm1rz-mpqvcyrfvl-ANY][0m
+[0m[1mmodule.gateway.aws_api_gateway_method.options: Creation complete after 0s [id=agm-ca6egsm1rz-mpqvcyrfvl-OPTIONS][0m
+[0m[1mmodule.gateway.aws_api_gateway_integration.backend_options: Creating...[0m[0m
+[0m[1mmodule.gateway.aws_api_gateway_integration.backend: Creating...[0m[0m
+[0m[1mmodule.gateway.aws_api_gateway_integration.backend: Creation complete after 0s [id=agi-ca6egsm1rz-mpqvcyrfvl-ANY][0m
+[0m[1mmodule.gateway.aws_api_gateway_integration.backend_options: Creation complete after 0s [id=agi-ca6egsm1rz-mpqvcyrfvl-OPTIONS][0m
+[0m[1mmodule.gateway.aws_api_gateway_deployment.d: Creating...[0m[0m
+[0m[1mmodule.gateway.aws_api_gateway_deployment.d: Creation complete after 0s [id=vzx33at9bq][0m
+[0m[1mmodule.gateway.aws_api_gateway_stage.v1: Creating...[0m[0m
+[0m[1mmodule.gateway.aws_api_gateway_stage.v1: Creation complete after 0s [id=ags-ca6egsm1rz-v1][0m
+[0m[1mmodule.gateway.aws_api_gateway_usage_plan.plan: Creating...[0m[0m
+[0m[1mmodule.gateway.aws_api_gateway_usage_plan.plan: Creation complete after 0s [id=dmtbvoiawt][0m
+[0m[1mmodule.gateway.aws_api_gateway_usage_plan_key.k: Creating...[0m[0m
+[0m[1mmodule.gateway.aws_api_gateway_usage_plan_key.k: Creation complete after 0s [id=p4dafensq3][0m
+[0m[1mmodule.ca.aws_sqs_queue.dlq: Still creating... [00m10s elapsed][0m[0m
+[0m[1mmodule.us.aws_sqs_queue.dlq: Still creating... [00m10s elapsed][0m[0m
+[0m[1mmodule.eu.aws_sqs_queue.dlq: Still creating... [00m10s elapsed][0m[0m
+[0m[1mmodule.ca.aws_sqs_queue.dlq: Still creating... [00m20s elapsed][0m[0m
+[0m[1mmodule.us.aws_sqs_queue.dlq: Still creating... [00m20s elapsed][0m[0m
+[0m[1mmodule.eu.aws_sqs_queue.dlq: Still creating... [00m20s elapsed][0m[0m
+[0m[1mmodule.ca.aws_sqs_queue.dlq: Creation complete after 25s [id=http://sqs.ca-central-1.localhost.localstack.cloud:4566/000000000000/ca-fanout-dlq][0m
+[0m[1mmodule.ca.aws_sqs_queue.work: Creating...[0m[0m
+[0m[1mmodule.us.aws_sqs_queue.dlq: Creation complete after 25s [id=http://sqs.us-east-1.localhost.localstack.cloud:4566/000000000000/us-fanout-dlq][0m
+[0m[1mmodule.us.aws_sqs_queue.work: Creating...[0m[0m
+[0m[1mmodule.eu.aws_sqs_queue.dlq: Creation complete after 25s [id=http://sqs.eu-west-1.localhost.localstack.cloud:4566/000000000000/eu-fanout-dlq][0m
+[0m[1mmodule.eu.aws_sqs_queue.work: Creating...[0m[0m
+[0m[1mmodule.ca.aws_sqs_queue.work: Still creating... [00m11s elapsed][0m[0m
+[0m[1mmodule.us.aws_sqs_queue.work: Still creating... [00m10s elapsed][0m[0m
+[0m[1mmodule.eu.aws_sqs_queue.work: Still creating... [00m10s elapsed][0m[0m
+[0m[1mmodule.ca.aws_sqs_queue.work: Still creating... [00m21s elapsed][0m[0m
+[0m[1mmodule.us.aws_sqs_queue.work: Still creating... [00m20s elapsed][0m[0m
+[0m[1mmodule.eu.aws_sqs_queue.work: Still creating... [00m20s elapsed][0m[0m
+[0m[1mmodule.ca.aws_sqs_queue.work: Creation complete after 26s [id=http://sqs.ca-central-1.localhost.localstack.cloud:4566/000000000000/ca-fanout][0m
+[0m[1mmodule.us.aws_sqs_queue.work: Creation complete after 25s [id=http://sqs.us-east-1.localhost.localstack.cloud:4566/000000000000/us-fanout][0m
+[0m[1mmodule.eu.aws_sqs_queue.work: Creation complete after 25s [id=http://sqs.eu-west-1.localhost.localstack.cloud:4566/000000000000/eu-fanout][0m
+[0m[1m[32m
+Apply complete! Resources: 32 added, 0 changed, 0 destroyed.[0m
+[0m[1m[32m
+Outputs:
+
+[0mgateway_key_id = "p4dafensq3"
+gateway_url = "https://ca6egsm1rz.execute-api.us-east-1.amazonaws.com/v1"
+queues = {
+  "ca" = "http://sqs.ca-central-1.localhost.localstack.cloud:4566/000000000000/ca-fanout"
+  "eu" = "http://sqs.eu-west-1.localhost.localstack.cloud:4566/000000000000/eu-fanout"
+  "us" = "http://sqs.us-east-1.localhost.localstack.cloud:4566/000000000000/us-fanout"
+}

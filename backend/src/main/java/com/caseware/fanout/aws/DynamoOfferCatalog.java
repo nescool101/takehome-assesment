@@ -47,7 +47,8 @@ public class DynamoOfferCatalog implements OfferCatalog {
                 .key(Map.of("offerId", AttributeValue.builder().s(id).build()))).item();
         var w = item.get("withdrawn");
         boolean withdrawn = w != null && Boolean.TRUE.equals(w.bool());
-        if (ttlNanos > 0) cache.put(id, new Entry(withdrawn, now + ttlNanos));
+        // withdrawal is irreversible: never let a racing stale read overwrite a withdrawn entry
+        if (ttlNanos > 0) cache.merge(id, new Entry(withdrawn, now + ttlNanos), (old, nu) -> old.withdrawn ? old : nu);
         return withdrawn;
     }
 
@@ -56,6 +57,6 @@ public class DynamoOfferCatalog implements OfferCatalog {
         ddb.putItem(b -> b.tableName(table).item(Map.of(
                 "offerId", AttributeValue.builder().s(id).build(),
                 "withdrawn", AttributeValue.builder().bool(true).build())));
-        cache.remove(id); // this process sees it at once; other processes within ttl
+        cache.put(id, new Entry(true, Long.MAX_VALUE)); // this process sees it at once; other processes within ttl
     }
 }

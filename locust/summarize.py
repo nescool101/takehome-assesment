@@ -45,7 +45,7 @@ for sc in ("OPTIMISTIC", "MID", "PESSIMISTIC"):
         (a, sa), (b, sb) = runs[(sc, "off")], runs[(sc, "on")]
         ra, rb = a["catalogReads"], b["catalogReads"]
         pa, pb = sa.get(STATUS, {}).get("95%", "n/a"), sb.get(STATUS, {}).get("95%", "n/a")
-        L.append(f"| {sc} | {ra} | {rb} | {100 * (ra - rb) / ra:.0f}% | {a['measuredDrainSeconds']} | {b['measuredDrainSeconds']} | "
+        L.append(f"| {sc} | {ra} | {rb} | {100 * (ra - rb) / ra if ra else 0:.0f}% | {a['measuredDrainSeconds']} | {b['measuredDrainSeconds']} | "
                  f"{pa} | {pb} | ${(ra - rb) * 0.25 / 1e6:.6f} |")
 
 L += ["", "## Pending-badge latency for a median-size firm during the burst (seconds from publish start)", "",

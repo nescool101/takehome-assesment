@@ -5,8 +5,12 @@ meta {
 
 post {
   url: {{base}}/admin/offers/{{offerId}}/withdraw
-  body: none
+  body: json
   auth: none
+}
+
+body:json {
+  {}
 }
 
 assert {

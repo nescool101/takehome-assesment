@@ -26,7 +26,7 @@ err.id = "error"; err.setAttribute("data-testid", "error"); err.style.color = "#
 document.getElementById("log").before(err);
 const call = async (m, p, b) => {
   try {
-    const r = await fetch(API + p, { method: m, body: b && JSON.stringify(b) });
+    const r = await fetch(API + p, { method: m, headers: { "Content-Type": "application/json" }, body: b && JSON.stringify(b) });
     const j = await r.json();
     if (!r.ok) throw new Error(j.error || r.status);
     err.textContent = "";

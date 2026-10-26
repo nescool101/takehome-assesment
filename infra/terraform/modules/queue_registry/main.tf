@@ -7,7 +7,7 @@ terraform {
 variable "name" { type = string }
 
 # Poison/crash-loop safety net only. Real retries are counted by the worker (RETRY_MAX_ATTEMPTS);
-# deferrals also bump SQS ReceiveCount, so this must stay well above it.
+# deferrals and retries are re-sent as new messages, so ReceiveCount only counts real redeliveries (crashes).
 variable "max_receive_count" {
   type    = number
   default = 20
@@ -56,6 +56,11 @@ resource "aws_dynamodb_table" "idempotency" {
   attribute {
     name = "k"
     type = "S"
+  }
+  # DONE rows carry exp (30 days); without TTL the table grows forever
+  ttl {
+    attribute_name = "exp"
+    enabled        = true
   }
 }
 

@@ -42,6 +42,6 @@ module "gateway" {
   source      = "../../modules/api_gateway"
   providers   = { aws = aws.us }
   name        = "us"
-  backend_url = "http://REPLACE-with-alb-dns"
+  backend_url = "http://REPLACE-with-alb-dns" # validation fails until replaced with the real ALB URL
 }
 
