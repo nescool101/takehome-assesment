@@ -34,6 +34,7 @@ public final class Main {
         var source = new SqsJobSource(sqs, q, dlq);
         var idem = new DynamoIdempotency(ddb, name + "-idempotency", Duration.ofSeconds(2L * cfg.visibilityTimeoutSeconds()));
         var decisions = new DynamoDecisions(ddb, name + "-decisions");
+        var registry = new DynamoRegistry(ddb, name + "-registry");
         var catalog = new DynamoOfferCatalog(ddb, name + "-offers",
                 cfg.cacheEnabled() ? Duration.ofSeconds(cfg.cacheTtlSeconds()) : Duration.ZERO);
 
@@ -45,7 +46,7 @@ public final class Main {
                 new Backoff(Duration.ofMillis(200), Duration.ofSeconds(30), new Random()),
                 permits, cfg.retryMaxAttempts(), Duration.ofMillis(cfg.deferDelayMs()));
 
-        new OpsApi(Integer.parseInt(env("PORT", "8080")), source, idem, catalog, decisions, sqs, q, dlq,
+        new OpsApi(Integer.parseInt(env("PORT", "8080")), source, idem, catalog, decisions, registry, sqs, q, dlq,
                 downstream::statsJson, configJson(cfg)).start();
         System.out.println("ops api up, permits=" + permits + " simLatencyMs=" + cfg.simLatencyMs());
         // SIGTERM (ECS deploy): stop polling, let in-flight loads finish and ack, then exit

@@ -46,9 +46,13 @@ public class DynamoIdempotency implements IdempotencyStore {
         return !item.isEmpty() && "DONE".equals(item.get("state").s());
     }
 
-    /** How many of these keys are DONE: BatchGetItem, 100 keys per call (status endpoint over thousands of jobs). */
     public long countDone(java.util.List<String> keys) {
-        long done = 0;
+        return doneKeys(keys).size();
+    }
+
+    /** Which of these keys are DONE: BatchGetItem, 100 keys per call (a whole engagement or offer in a few calls). */
+    public java.util.Set<String> doneKeys(java.util.List<String> keys) {
+        var done = new java.util.HashSet<String>();
         for (int i = 0; i < keys.size(); i += 100) {
             var pending = new java.util.ArrayList<Map<String, AttributeValue>>();
             for (String k : keys.subList(i, Math.min(i + 100, keys.size()))) pending.add(Map.of("k", s(k)));
@@ -56,7 +60,7 @@ public class DynamoIdempotency implements IdempotencyStore {
                 var r = ddb.batchGetItem(b -> b.requestItems(Map.of(table,
                         KeysAndAttributes.builder().keys(pending).consistentRead(true).build())));
                 for (var item : r.responses().getOrDefault(table, java.util.List.of()))
-                    if ("DONE".equals(item.get("state").s())) done++;
+                    if ("DONE".equals(item.get("state").s())) done.add(item.get("k").s());
                 var un = r.unprocessedKeys().get(table);
                 pending.clear();
                 if (un != null) pending.addAll(un.keys());

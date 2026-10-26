@@ -18,7 +18,7 @@ import software.amazon.awssdk.services.sqs.model.QueueAttributeName;
 
 /**
  * Ops API on the JDK HttpServer. Offer id = "templateId@version".
- * ponytail: published jobs and decisions are in memory (lost on restart); the real home is the registry/decisions tables.
+ * Published jobs live in the registry table, decisions in the decisions table: nothing is held in process memory.
  */
 public final class OpsApi {
     private final SqsJobSource source;
@@ -28,14 +28,13 @@ public final class OpsApi {
     private static final ObjectMapper JSON = new ObjectMapper();
     private final SqsClient sqs;
     private final String queueUrl, dlqUrl;
-    private final Map<String, Set<Job>> byOffer = new ConcurrentHashMap<>(); // sets: a repeated publish must not double-count
-    private final Map<String, Set<Job>> byEngagement = new ConcurrentHashMap<>();
+    private final DynamoRegistry registry;
     private final java.util.function.Supplier<String> downstreamStats;
     private final String configJson;
     private final HttpServer server;
 
     public OpsApi(int port, SqsJobSource source, DynamoIdempotency idem, DynamoOfferCatalog catalog,
-                  DynamoDecisions decisions, SqsClient sqs, String queueUrl, String dlqUrl,
+                  DynamoDecisions decisions, DynamoRegistry registry, SqsClient sqs, String queueUrl, String dlqUrl,
                   java.util.function.Supplier<String> downstreamStats, String configJson) throws IOException {
         this.downstreamStats = downstreamStats;
         this.configJson = configJson;
@@ -43,6 +42,7 @@ public final class OpsApi {
         this.idem = idem;
         this.catalog = catalog;
         this.decisions = decisions;
+        this.registry = registry;
         this.sqs = sqs;
         this.queueUrl = queueUrl;
         this.dlqUrl = dlqUrl;
@@ -129,26 +129,19 @@ public final class OpsApi {
         String offer = tpl + "@" + ver;
         catalog.register(tpl, ver);
         source.sendAll(List.copyOf(batch));
-        // register jobs only after the enqueue succeeded: a failed publish leaves no phantom jobs
-        for (Job j : batch) {
-            byOffer.computeIfAbsent(offer, k -> ConcurrentHashMap.newKeySet()).add(j);
-            byEngagement.computeIfAbsent(j.engagementId(), k -> ConcurrentHashMap.newKeySet()).add(j);
-        }
+        // index only after the enqueue succeeded: a failed publish leaves no phantom jobs; a failed index write -> 500,
+        // the caller republishes and idempotency absorbs the duplicate messages
+        registry.putAll(List.copyOf(batch));
         send(x, 202, obj("offerId", offer, "enqueued", batch.size()));
     }
 
     private Object offerStatus(String offer) {
         String[] p = offerParts(offer);
-        List<Job> jobs = snapshot(byOffer.getOrDefault(offer, Set.of()));
+        List<Job> jobs = registry.byOffer(offer);
         long done = idem.countDone(jobs.stream().map(Job::key).toList());
         boolean w = catalog.isWithdrawn(p[0], p[1]); // the catalog is the source of truth, also after a restart
         return obj("offerId", offer, "published", jobs.size(), "done", done,
                 "inFlightOrQueued", jobs.size() - done, "withdrawn", w);
-    }
-
-    /** Copy so no lock is held across a DynamoDB call (a slow call used to block every other status request). */
-    private static List<Job> snapshot(Set<Job> s) {
-        return List.copyOf(s);
     }
 
     private static String[] offerParts(String offer) {
@@ -176,11 +169,10 @@ public final class OpsApi {
 
     private List<Job> pendingJobs(String eng) {
         id(eng, "engagement id");
-        List<Job> out = new ArrayList<>();
         Set<String> decided = decisions.decidedKeys(eng);
-        for (Job j : snapshot(byEngagement.getOrDefault(eng, Set.of())))
-            if (!decided.contains(j.key()) && idem.isDone(j.key()) && !catalog.isWithdrawn(j.templateId(), j.version())) out.add(j);
-        return out;
+        List<Job> open = registry.byEngagement(eng).stream().filter(j -> !decided.contains(j.key())).toList();
+        Set<String> done = idem.doneKeys(open.stream().map(Job::key).toList());
+        return open.stream().filter(j -> done.contains(j.key()) && !catalog.isWithdrawn(j.templateId(), j.version())).toList();
     }
 
     private void decision(HttpExchange x, String eng) throws IOException {
@@ -193,7 +185,7 @@ public final class OpsApi {
     }
 
     private Object metrics() throws IOException {
-        return obj("queue", depth(queueUrl), "dlq", depth(dlqUrl), "published", byOffer.values().stream().mapToInt(Set::size).sum(),
+        return obj("queue", depth(queueUrl), "dlq", depth(dlqUrl), "published", registry.count(),
                 "catalogReads", catalog.reads.get(), "downstream", JSON.readTree(downstreamStats.get()), "config", JSON.readTree(configJson));
     }
 

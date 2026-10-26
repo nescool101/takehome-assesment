@@ -182,4 +182,27 @@ class LocalStackTest {
         e.cat.register("tpl", "v1"); // republish must not un-withdraw
         assertTrue(e.cat.isWithdrawn("tpl", "v1"));
     }
+
+    @Test
+    void registryIndexesJobsByEngagementAndOfferAndIsIdempotent() {
+        String t = "reg-" + UUID.randomUUID().toString().substring(0, 8);
+        ddb.createTable(b -> b.tableName(t).billingMode(BillingMode.PAY_PER_REQUEST)
+                .keySchema(KeySchemaElement.builder().attributeName("engagementId").keyType(KeyType.HASH).build(),
+                        KeySchemaElement.builder().attributeName("offer").keyType(KeyType.RANGE).build())
+                .attributeDefinitions(
+                        AttributeDefinition.builder().attributeName("engagementId").attributeType(ScalarAttributeType.S).build(),
+                        AttributeDefinition.builder().attributeName("offer").attributeType(ScalarAttributeType.S).build())
+                .globalSecondaryIndexes(GlobalSecondaryIndex.builder().indexName("offer-index")
+                        .keySchema(KeySchemaElement.builder().attributeName("offer").keyType(KeyType.HASH).build())
+                        .projection(Projection.builder().projectionType(ProjectionType.ALL).build()).build()));
+        var reg = new DynamoRegistry(ddb, t);
+        var jobs = new java.util.ArrayList<Job>();
+        for (int i = 0; i < 30; i++) jobs.add(new Job("e" + i, "f1", "tpl", "v1")); // > 25: several batches
+        jobs.add(new Job("e0", "f1", "tpl", "v2"));
+        reg.putAll(jobs);
+        reg.putAll(jobs); // republish: same rows
+        assertEquals(2, reg.byEngagement("e0").size());
+        assertEquals(30, reg.byOffer("tpl@v1").size());
+        assertEquals(31, reg.count());
+    }
 }
