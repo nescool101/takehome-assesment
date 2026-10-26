@@ -12,12 +12,16 @@ class InMemorySource implements JobSource {
     private final Set<Received> inflight = new HashSet<>();
     final List<String> dlq = Collections.synchronizedList(new ArrayList<>());
 
+    int failPolls; // next N polls throw (transient SQS error)
+    int failAcks; // next N acks throw; the message then comes back, as after an expired receipt handle
+
     synchronized void send(Job job) {
         queue.add(new Entry(job, 0, 0));
     }
 
     @Override
     public synchronized List<Received> poll(int max) {
+        if (failPolls-- > 0) throw new IllegalStateException("sqs throttled");
         long now = System.currentTimeMillis();
         List<Received> out = new ArrayList<>();
         for (Iterator<Entry> it = queue.iterator(); it.hasNext() && out.size() < max; ) {
@@ -34,6 +38,10 @@ class InMemorySource implements JobSource {
 
     @Override
     public synchronized void ack(Received r) {
+        if (failAcks-- > 0) {
+            requeue(r, ((Entry) r.handle()).failures, Duration.ZERO);
+            throw new IllegalStateException("ack failed");
+        }
         inflight.remove(r);
     }
 

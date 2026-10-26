@@ -129,4 +129,23 @@ class FanOutWorkerTest {
             assertTrue(ms >= 1 && ms <= 5_000, "attempt " + a + " -> " + ms);
         }
     }
+
+    @Test
+    void pollErrorDoesNotKillTheLoop() {
+        SimDownstream d = new SimDownstream(1);
+        source.failPolls = 3;
+        source.send(job("e1", "f1"));
+        drain(worker(d, 4, 4, 3, (t, v) -> false));
+        assertEquals(1, d.calls.get());
+    }
+
+    @Test
+    void ackFailureAfterSuccessfulLoadDoesNotRepeatTheLoad() {
+        SimDownstream d = new SimDownstream(1);
+        source.failAcks = 1;
+        source.send(job("e1", "f1"));
+        drain(worker(d, 4, 4, 3, (t, v) -> false));
+        assertEquals(1, d.calls.get()); // redelivery sees DONE and skips
+        assertTrue(source.dlq.isEmpty());
+    }
 }

@@ -10,8 +10,9 @@ def get(p, tries=5):
     for n in range(tries):
         try:
             return json.load(urllib.request.urlopen(base + p, timeout=30))
-        except urllib.error.HTTPError as e:  # surface the API's error body, retry transient ones
-            print("HTTP", e.code, p, e.read()[:300], file=sys.stderr)
+        except (urllib.error.URLError, TimeoutError) as e:  # HTTPError is a URLError; retry refused/timeout too
+            body = e.read()[:300] if isinstance(e, urllib.error.HTTPError) else e  # surface the API's error body
+            print("request failed", p, body, file=sys.stderr)
             if n == tries - 1:
                 raise
             time.sleep(1)

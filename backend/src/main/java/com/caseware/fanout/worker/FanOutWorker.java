@@ -43,11 +43,15 @@ public final class FanOutWorker {
     /** Poll loop. Never holds more than {@code permits} messages: pulls only as many as there are free slots. */
     public void run(BooleanSupplier stop, int batch, Duration idle) {
         try (var pool = Executors.newVirtualThreadPerTaskExecutor()) {
-            while (!stop.getAsBoolean()) {
+            while (!stop.getAsBoolean() && !Thread.currentThread().isInterrupted()) {
                 int want = Math.min(batch, slots.availablePermits());
                 List<Received> got = List.of();
                 if (want > 0 && slots.tryAcquire(want)) {
-                    got = source.poll(want);
+                    try {
+                        got = source.poll(want);
+                    } catch (RuntimeException e) { // transient SQS error: keep the loop alive
+                        System.err.println("poll failed: " + e);
+                    }
                     slots.release(want - got.size()); // return unused slots
                 }
                 if (got.isEmpty()) {
@@ -58,6 +62,8 @@ public final class FanOutWorker {
                     pool.submit(() -> {
                         try {
                             process(r);
+                        } catch (RuntimeException e) { // message stays unacked: redelivered after the visibility timeout
+                            System.err.println("process failed for " + r.job().key() + ": " + e);
                         } finally {
                             slots.release();
                         }
@@ -94,15 +100,16 @@ public final class FanOutWorker {
         Job job = r.job();
         try {
             downstream.load(job);
-            breaker.success();
-            idem.done(job.key());
-            source.ack(r); // crash before this line => redelivery => DONE => skipped
-            return new Done();
         } catch (DownstreamException e) {
             return failed(r, e.getMessage(), e.retryable);
         } catch (RuntimeException e) {
             return failed(r, String.valueOf(e), true);
         }
+        // load succeeded: a bookkeeping error here must not release the key or count as a downstream failure
+        breaker.success();
+        idem.done(job.key());
+        source.ack(r); // crash before this line => redelivery => DONE => skipped
+        return new Done();
     }
 
     private Outcome failed(Received r, String why, boolean retryable) {

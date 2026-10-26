@@ -6,12 +6,14 @@ import com.caseware.fanout.config.AppConfig;
 import com.caseware.fanout.worker.*;
 import java.net.URI;
 import java.time.Duration;
+import java.util.Map;
 import java.util.Random;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.sqs.SqsClient;
+import software.amazon.awssdk.services.sqs.model.QueueAttributeName;
 
 /** One region's worker + ops API. Queues/tables come from Terraform ("<region-short>-fanout" etc). */
 public final class Main {
@@ -27,8 +29,12 @@ public final class Main {
 
         String q = sqs.getQueueUrl(b -> b.queueName(name + "-fanout")).queueUrl();
         String dlq = sqs.getQueueUrl(b -> b.queueName(name + "-fanout-dlq")).queueUrl();
+        // the knob must really drive the queue; the idempotency lease stays 2x it so a live worker is never retaken
+        sqs.setQueueAttributes(b -> b.queueUrl(q).attributes(Map.of(QueueAttributeName.VISIBILITY_TIMEOUT,
+                String.valueOf(cfg.visibilityTimeoutSeconds()))));
         var source = new SqsJobSource(sqs, q, dlq);
-        var idem = new DynamoIdempotency(ddb, name + "-idempotency", Duration.ofMinutes(10));
+        var idem = new DynamoIdempotency(ddb, name + "-idempotency", Duration.ofSeconds(2L * cfg.visibilityTimeoutSeconds()));
+        var decisions = new DynamoDecisions(ddb, name + "-decisions");
         var catalog = new DynamoOfferCatalog(ddb, name + "-offers",
                 cfg.cacheEnabled() ? Duration.ofSeconds(cfg.cacheTtlSeconds()) : Duration.ZERO);
 
@@ -36,11 +42,11 @@ public final class Main {
         var downstream = new SimulatedDownstream(cfg.simLatencyMs());
         var worker = new FanOutWorker(source, downstream, idem, catalog,
                 new FirmLimiter(Math.max(1, permits / 2)), // ponytail: fixed half-of-permits per-firm cap, tune from load results
-                new CircuitBreaker(5, 5_000, System::currentTimeMillis),
+                new CircuitBreaker(cfg.breakerFailures(), cfg.breakerCooldownMs(), System::currentTimeMillis),
                 new Backoff(Duration.ofMillis(200), Duration.ofSeconds(30), new Random()),
-                permits, cfg.retryMaxAttempts(), Duration.ofSeconds(1));
+                permits, cfg.retryMaxAttempts(), Duration.ofMillis(cfg.deferDelayMs()));
 
-        new OpsApi(Integer.parseInt(env("PORT", "8080")), source, idem, catalog, sqs, q, dlq,
+        new OpsApi(Integer.parseInt(env("PORT", "8080")), source, idem, catalog, decisions, sqs, q, dlq,
                 downstream::statsJson, configJson(cfg)).start();
         System.out.println("ops api up, permits=" + permits + " simLatencyMs=" + cfg.simLatencyMs());
         worker.run(() -> false, 10, Duration.ofMillis(100));
@@ -51,7 +57,9 @@ public final class Main {
         return "{\"scenario\":\"" + c.scenario() + "\",\"budget\":\"" + c.budget() + "\",\"permits\":" + p.downstreamPermits()
                 + ",\"simLatencyMs\":" + c.simLatencyMs() + ",\"loadSeconds\":" + p.engagementLoadTime().toSeconds()
                 + ",\"activeEngagements\":" + p.activeEngagements() + ",\"firms\":" + p.firms()
-                + ",\"medianPerFirm\":" + p.medianEngagementsPerFirm() + ",\"maxPerFirm\":" + p.maxEngagementsPerFirm() + ",\"cacheEnabled\":" + c.cacheEnabled() + "}";
+                + ",\"medianPerFirm\":" + p.medianEngagementsPerFirm() + ",\"maxPerFirm\":" + p.maxEngagementsPerFirm() + ",\"cacheEnabled\":" + c.cacheEnabled()
+                + ",\"tier\":\"" + c.tier() + "\",\"budgetCapUsd\":" + c.budgetCapUsd()
+                + ",\"visibilityTimeoutSeconds\":" + c.visibilityTimeoutSeconds() + "}";
     }
 
     private static String env(String k, String d) {

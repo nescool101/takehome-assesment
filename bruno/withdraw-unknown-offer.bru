@@ -1,0 +1,18 @@
+meta {
+  name: withdraw rejects an unknown offer
+  seq: 11
+}
+
+post {
+  url: {{base}}/admin/offers/tp1-typo@v0/withdraw
+  body: json
+  auth: none
+}
+
+body:json {
+  {}
+}
+
+assert {
+  res.status: eq 400
+}

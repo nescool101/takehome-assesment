@@ -61,18 +61,22 @@ public class SqsJobSource implements JobSource {
 
     @Override
     public void defer(Received r, Duration delay) {
-        // ponytail: visibility max is 12h, delays here are seconds
-        sqs.changeMessageVisibility(b -> b.queueUrl(queueUrl).receiptHandle(msg(r).receiptHandle())
-                .visibilityTimeout((int) Math.max(0, Math.min(delay.toSeconds(), 43200))));
+        // re-send instead of changeMessageVisibility: every receive raises ReceiveCount, and a deferred job
+        // would hit the DLQ redrive limit without ever being processed. Same attempt, fresh count.
+        requeue(r, delay, r.attempt());
     }
 
     @Override
     public void retry(Received r, Duration delay) {
-        // send-then-delete: a crash between them duplicates the job (idempotency absorbs it), never loses it
+        requeue(r, delay, r.attempt() + 1);
+    }
+
+    /** send-then-delete: a crash between them duplicates the job (idempotency absorbs it), never loses it. */
+    private void requeue(Received r, Duration delay, int attempt) {
         sqs.sendMessage(b -> b.queueUrl(queueUrl).messageBody(msg(r).body())
-                .delaySeconds((int) Math.max(0, Math.min(delay.toSeconds(), 900)))
+                .delaySeconds(delaySeconds(delay))
                 .messageAttributes(Map.of(ATTEMPT, MessageAttributeValue.builder().dataType("Number")
-                        .stringValue(String.valueOf(r.attempt() + 1)).build())));
+                        .stringValue(String.valueOf(attempt)).build())));
         delete(r);
     }
 
@@ -82,6 +86,11 @@ public class SqsJobSource implements JobSource {
                 .messageAttributes(Map.of("reason", MessageAttributeValue.builder().dataType("String")
                         .stringValue(reason == null ? "" : reason).build())));
         delete(r);
+    }
+
+    /** Round up: SQS delays are whole seconds, so a 200ms backoff must not become 0 (immediate retry). Max 900. */
+    static int delaySeconds(Duration d) {
+        return (int) Math.max(0, Math.min((d.toMillis() + 999) / 1000, 900));
     }
 
     private void delete(Received r) {

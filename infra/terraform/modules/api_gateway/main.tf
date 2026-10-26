@@ -8,6 +8,10 @@ variable "name" { type = string }
 variable "backend_url" {
   type        = string
   description = "ops API base URL the gateway proxies to (e.g. the ALB in front of the Fargate service)"
+  validation {
+    condition     = !strcontains(var.backend_url, "REPLACE")
+    error_message = "backend_url is still the placeholder; set the real ALB/service URL."
+  }
 }
 variable "rate_limit" {
   type    = number
@@ -33,12 +37,32 @@ resource "aws_api_gateway_resource" "proxy" {
 }
 
 resource "aws_api_gateway_method" "any" {
-  rest_api_id      = aws_api_gateway_rest_api.ops.id
-  resource_id      = aws_api_gateway_resource.proxy.id
-  http_method      = "ANY"
-  authorization    = "NONE"
-  api_key_required = true
+  rest_api_id        = aws_api_gateway_rest_api.ops.id
+  resource_id        = aws_api_gateway_resource.proxy.id
+  http_method        = "ANY"
+  authorization      = "NONE"
+  api_key_required   = true
   request_parameters = { "method.request.path.proxy" = true }
+}
+
+# Browser CORS preflights carry no API key, so OPTIONS is open and proxied (the backend answers 204 with CORS headers).
+resource "aws_api_gateway_method" "options" {
+  rest_api_id        = aws_api_gateway_rest_api.ops.id
+  resource_id        = aws_api_gateway_resource.proxy.id
+  http_method        = "OPTIONS"
+  authorization      = "NONE"
+  api_key_required   = false
+  request_parameters = { "method.request.path.proxy" = true }
+}
+
+resource "aws_api_gateway_integration" "backend_options" {
+  rest_api_id             = aws_api_gateway_rest_api.ops.id
+  resource_id             = aws_api_gateway_resource.proxy.id
+  http_method             = aws_api_gateway_method.options.http_method
+  type                    = "HTTP_PROXY"
+  integration_http_method = "OPTIONS"
+  uri                     = "${var.backend_url}/{proxy}"
+  request_parameters      = { "integration.request.path.proxy" = "method.request.path.proxy" }
 }
 
 resource "aws_api_gateway_integration" "backend" {
@@ -53,7 +77,7 @@ resource "aws_api_gateway_integration" "backend" {
 
 resource "aws_api_gateway_deployment" "d" {
   rest_api_id = aws_api_gateway_rest_api.ops.id
-  triggers    = { redeploy = sha1(jsonencode([aws_api_gateway_method.any, aws_api_gateway_integration.backend])) }
+  triggers    = { redeploy = sha1(jsonencode([aws_api_gateway_method.any, aws_api_gateway_integration.backend, aws_api_gateway_method.options, aws_api_gateway_integration.backend_options])) }
   lifecycle { create_before_destroy = true }
 }
 

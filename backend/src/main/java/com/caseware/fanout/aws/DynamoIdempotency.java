@@ -4,6 +4,7 @@ import com.caseware.fanout.worker.Ports.IdempotencyStore;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
+import java.util.UUID;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.*;
 
@@ -12,6 +13,8 @@ public class DynamoIdempotency implements IdempotencyStore {
     private final DynamoDbClient ddb;
     public final String table;
     private final Duration lease;
+    private static final long DONE_TTL_SECONDS = Duration.ofDays(30).toSeconds(); // enable DynamoDB TTL on "exp"
+    private final String owner = UUID.randomUUID().toString(); // claim owner: a stalled worker must not release another's claim
 
     /** @param lease how long an IN_PROGRESS claim blocks others; after it a crashed worker's key is retaken. */
     public DynamoIdempotency(DynamoDbClient ddb, String table, Duration lease) {
@@ -25,7 +28,7 @@ public class DynamoIdempotency implements IdempotencyStore {
         long now = Instant.now().getEpochSecond();
         try {
             ddb.putItem(b -> b.tableName(table)
-                    .item(Map.of("k", s(key), "state", s("IN_PROGRESS"),
+                    .item(Map.of("k", s(key), "state", s("IN_PROGRESS"), "owner", s(owner),
                             "exp", n(now + lease.toSeconds())))
                     .conditionExpression("attribute_not_exists(k) OR (#s = :ip AND exp < :now)")
                     .expressionAttributeNames(Map.of("#s", "state"))
@@ -64,12 +67,20 @@ public class DynamoIdempotency implements IdempotencyStore {
 
     @Override
     public void done(String key) {
-        ddb.putItem(b -> b.tableName(table).item(Map.of("k", s(key), "state", s("DONE"))));
+        ddb.putItem(b -> b.tableName(table).item(Map.of("k", s(key), "state", s("DONE"),
+                "exp", n(Instant.now().getEpochSecond() + DONE_TTL_SECONDS))));
     }
 
     @Override
     public void release(String key) {
-        ddb.deleteItem(b -> b.tableName(table).key(Map.of("k", s(key))));
+        try {
+            ddb.deleteItem(b -> b.tableName(table).key(Map.of("k", s(key)))
+                    .conditionExpression("#s = :ip AND #o = :me")
+                    .expressionAttributeNames(Map.of("#s", "state", "#o", "owner"))
+                    .expressionAttributeValues(Map.of(":ip", s("IN_PROGRESS"), ":me", s(owner))));
+        } catch (ConditionalCheckFailedException e) {
+            // claim already DONE or taken over by another worker: not ours to delete
+        }
     }
 
     private static AttributeValue s(String v) { return AttributeValue.builder().s(v).build(); }

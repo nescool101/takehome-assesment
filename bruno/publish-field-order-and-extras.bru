@@ -1,0 +1,19 @@
+meta {
+  name: publish accepts any field order and extra fields
+  seq: 10
+}
+
+post {
+  url: {{base}}/admin/publishes
+  body: json
+  auth: none
+}
+
+body:json {
+  {"version":"v{{$timestamp}}","templateId":"tpl-bruno-order","note":"ignored","engagements":[{"firmId":"f1","id":"bro1","name":"extra"},{"id":"bro1","firmId":"f1"}]}
+}
+
+assert {
+  res.status: eq 202
+  res.body.enqueued: eq 1
+}
