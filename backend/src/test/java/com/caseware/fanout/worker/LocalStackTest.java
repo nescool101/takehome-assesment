@@ -211,4 +211,24 @@ class LocalStackTest {
         assertEquals(30, reg.byOffer("tpl@v1").size());
         assertEquals(31, reg.count());
     }
+
+    @Test
+    void breakerStateIsSharedAcrossWorkers() throws Exception {
+        Env e = env();
+        String locks = "locks-" + UUID.randomUUID().toString().substring(0, 8);
+        net.javacrumbs.shedlock.provider.dynamodb2.DynamoDBUtils.createLockTable(ddb, locks,
+                ProvisionedThroughput.builder().readCapacityUnits(1L).writeCapacityUnits(1L).build());
+        var lp = new net.javacrumbs.shedlock.provider.dynamodb2.DynamoDBLockProvider(ddb, locks);
+        var a = new CircuitBreaker(2, 300, System::currentTimeMillis, new DynamoBreakerStore(ddb, e.idem.table, lp), 0);
+        var b = new CircuitBreaker(2, 300, System::currentTimeMillis, new DynamoBreakerStore(ddb, e.idem.table, lp), 0);
+        a.failure();
+        assertTrue(b.allow());
+        b.failure(); // 2nd failure overall, from the other worker
+        assertFalse(a.allow(), "worker A sees the breaker B tripped");
+        Thread.sleep(350);
+        assertTrue(a.allow(), "one probe wins the cooldown window");
+        assertFalse(b.allow(), "the other worker must not also probe");
+        a.success();
+        assertTrue(b.allow(), "closed for everyone after the probe succeeds");
+    }
 }

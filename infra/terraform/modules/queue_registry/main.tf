@@ -116,3 +116,14 @@ resource "aws_dynamodb_table" "decisions" {
 
 output "queue_url" { value = aws_sqs_queue.work.url }
 output "dlq_url" { value = aws_sqs_queue.dlq.url }
+
+# ShedLock table: the shared circuit breaker takes its half-open probe lock here (hash key "_id" is ShedLock's schema)
+resource "aws_dynamodb_table" "locks" {
+  name         = "${var.name}-locks"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "_id"
+  attribute {
+    name = "_id"
+    type = "S"
+  }
+}

@@ -40,7 +40,9 @@ public final class Main {
         var downstream = new SimulatedDownstream(cfg.simLatencyMs());
         var worker = new FanOutWorker(source, downstream, idem, catalog,
                 new FirmLimiter(Math.max(1, permits / 2), permits), // ponytail: hard cap = half the permits, shrinking to a fair share as more firms are active
-                new CircuitBreaker(cfg.breakerFailures(), cfg.breakerCooldownMs(), System::currentTimeMillis),
+                new CircuitBreaker(cfg.breakerFailures(), cfg.breakerCooldownMs(), System::currentTimeMillis,
+                        new DynamoBreakerStore(ddb, name + "-idempotency",
+                                new net.javacrumbs.shedlock.provider.dynamodb2.DynamoDBLockProvider(ddb, name + "-locks")), 500), // shared by every worker of the region
                 new Backoff(Duration.ofMillis(200), Duration.ofSeconds(30), new Random()),
                 permits, cfg.retryMaxAttempts(), Duration.ofMillis(cfg.deferDelayMs()));
 
