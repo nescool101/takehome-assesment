@@ -44,6 +44,10 @@ public final class FanOutWorker {
     public void run(BooleanSupplier stop, int batch, Duration idle) {
         try (var pool = Executors.newVirtualThreadPerTaskExecutor()) {
             while (!stop.getAsBoolean() && !Thread.currentThread().isInterrupted()) {
+                if (!breaker.allow()) { // breaker open: leave messages on the queue instead of receive+resend+delete per message
+                    sleep(idle);
+                    continue;
+                }
                 int want = Math.min(batch, slots.availablePermits());
                 List<Received> got = List.of();
                 if (want > 0 && slots.tryAcquire(want)) {
@@ -107,9 +111,22 @@ public final class FanOutWorker {
         }
         // load succeeded: a bookkeeping error here must not release the key or count as a downstream failure
         breaker.success();
-        idem.done(job.key());
+        markDone(job.key());
         source.ack(r); // crash before this line => redelivery => DONE => skipped
         return new Done();
+    }
+
+    /** Retry in-process: a lost done() leaves the claim IN_PROGRESS until the lease expires, then the 1 min call repeats. */
+    private void markDone(String key) {
+        for (int i = 1; ; i++) {
+            try {
+                idem.done(key);
+                return;
+            } catch (RuntimeException e) {
+                if (i == 3) throw e;
+                sleep(Duration.ofMillis(100L << i));
+            }
+        }
     }
 
     private Outcome failed(Received r, String why, boolean retryable) {

@@ -47,7 +47,7 @@ public final class OpsApi {
         this.queueUrl = queueUrl;
         this.dlqUrl = dlqUrl;
         server = HttpServer.create(new InetSocketAddress(port), 0);
-        server.setExecutor(Executors.newCachedThreadPool()); // platform threads: virtual ones share carriers with the worker and starve behind it
+        server.setExecutor(Executors.newFixedThreadPool(32)); // bounded; platform threads: virtual ones share carriers with the worker and starve behind it
         server.createContext("/", this::handle);
     }
 
@@ -65,7 +65,7 @@ public final class OpsApi {
             Matcher o = OFFER.matcher(path), e = ENG.matcher(path);
             if (m.equals("OPTIONS")) send(x, 204, "");
             else if (!authorized(x, m, path)) send(x, 403, err("forbidden"));
-            else if (m.equals("GET") && path.equals("/health")) send(x, 200, "{\"ok\":true}");
+            else if (m.equals("GET") && path.equals("/health")) send(x, 200, obj("ok", true));
             else if (m.equals("GET") && path.equals("/metrics")) send(x, 200, metrics());
             else if (m.equals("POST") && path.equals("/admin/publishes")) publish(x);
             else if (o.matches() && m.equals("GET") && o.group(2).equals("status")) send(x, 200, offerStatus(o.group(1)));
@@ -76,7 +76,8 @@ public final class OpsApi {
         } catch (IllegalArgumentException ex) {
             send(x, 400, err(ex.getMessage()));
         } catch (RuntimeException ex) {
-            send(x, 500, err(String.valueOf(ex.getMessage())));
+            System.err.println("500 " + x.getRequestURI().getPath() + ": " + ex);
+            send(x, 500, err("internal error"));
         }
     }
 
@@ -133,16 +134,16 @@ public final class OpsApi {
             byOffer.computeIfAbsent(offer, k -> ConcurrentHashMap.newKeySet()).add(j);
             byEngagement.computeIfAbsent(j.engagementId(), k -> ConcurrentHashMap.newKeySet()).add(j);
         }
-        send(x, 202, "{\"offerId\":\"" + offer + "\",\"enqueued\":" + batch.size() + "}");
+        send(x, 202, obj("offerId", offer, "enqueued", batch.size()));
     }
 
-    private String offerStatus(String offer) {
+    private Object offerStatus(String offer) {
         String[] p = offerParts(offer);
         List<Job> jobs = snapshot(byOffer.getOrDefault(offer, Set.of()));
         long done = idem.countDone(jobs.stream().map(Job::key).toList());
         boolean w = catalog.isWithdrawn(p[0], p[1]); // the catalog is the source of truth, also after a restart
-        return "{\"offerId\":\"" + offer + "\",\"published\":" + jobs.size() + ",\"done\":" + done
-                + ",\"inFlightOrQueued\":" + (jobs.size() - done) + ",\"withdrawn\":" + w + "}";
+        return obj("offerId", offer, "published", jobs.size(), "done", done,
+                "inFlightOrQueued", jobs.size() - done, "withdrawn", w);
     }
 
     /** Copy so no lock is held across a DynamoDB call (a slow call used to block every other status request). */
@@ -166,12 +167,11 @@ public final class OpsApi {
     }
 
     /** Badge = a fanned-out, not-withdrawn, undecided offer exists. Summary is deterministic text (no LLM). */
-    private String engagementStatus(String eng) {
+    private Object engagementStatus(String eng) {
         List<String> pending = new ArrayList<>();
         for (Job j : pendingJobs(eng)) pending.add(j.templateId() + "@" + j.version());
         String summary = pending.isEmpty() ? "" : "Template update available: " + String.join(", ", pending);
-        return "{\"engagementId\":\"" + eng + "\",\"pending\":" + !pending.isEmpty()
-                + ",\"offers\":" + json(pending) + ",\"summary\":\"" + summary + "\"}";
+        return obj("engagementId", eng, "pending", !pending.isEmpty(), "offers", pending, "summary", summary);
     }
 
     private List<Job> pendingJobs(String eng) {
@@ -192,26 +192,31 @@ public final class OpsApi {
         send(x, 200, engagementStatus(eng));
     }
 
-    private String metrics() {
-        return "{\"queue\":" + depth(queueUrl) + ",\"dlq\":" + depth(dlqUrl) + ",\"published\":"
-                + byOffer.values().stream().mapToInt(Set::size).sum()
-                + ",\"catalogReads\":" + catalog.reads.get() + ",\"downstream\":" + downstreamStats.get() + ",\"config\":" + configJson + "}";
+    private Object metrics() throws IOException {
+        return obj("queue", depth(queueUrl), "dlq", depth(dlqUrl), "published", byOffer.values().stream().mapToInt(Set::size).sum(),
+                "catalogReads", catalog.reads.get(), "downstream", JSON.readTree(downstreamStats.get()), "config", JSON.readTree(configJson));
     }
 
-    private String depth(String url) {
+    private Object depth(String url) {
         var a = sqs.getQueueAttributes(b -> b.queueUrl(url).attributeNames(
                 QueueAttributeName.APPROXIMATE_NUMBER_OF_MESSAGES,
                 QueueAttributeName.APPROXIMATE_NUMBER_OF_MESSAGES_NOT_VISIBLE)).attributes();
-        return "{\"visible\":" + a.get(QueueAttributeName.APPROXIMATE_NUMBER_OF_MESSAGES)
-                + ",\"inFlight\":" + a.get(QueueAttributeName.APPROXIMATE_NUMBER_OF_MESSAGES_NOT_VISIBLE) + "}";
+        return obj("visible", a.get(QueueAttributeName.APPROXIMATE_NUMBER_OF_MESSAGES),
+                "inFlight", a.get(QueueAttributeName.APPROXIMATE_NUMBER_OF_MESSAGES_NOT_VISIBLE));
     }
 
-    private static String json(List<String> l) {
-        return "[" + String.join(",", l.stream().map(s -> "\"" + s + "\"").toList()) + "]";
+    private static Map<String, Object> obj(Object... kv) {
+        var m = new LinkedHashMap<String, Object>();
+        for (int i = 0; i < kv.length; i += 2) m.put((String) kv[i], kv[i + 1]);
+        return m;
     }
 
-    private static String err(String m) {
-        return "{\"error\":\"" + m.replace("\\", "/").replace("\"", "'").replaceAll("[\\p{Cntrl}]", " ") + "\"}";
+    private static Object err(String m) {
+        return obj("error", m);
+    }
+
+    private static void send(HttpExchange x, int code, Object body) throws IOException {
+        send(x, code, body instanceof String s ? s : JSON.writeValueAsString(body));
     }
 
     private static void send(HttpExchange x, int code, String body) throws IOException {

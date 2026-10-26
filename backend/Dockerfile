@@ -8,5 +8,7 @@ FROM eclipse-temurin:21-jre
 WORKDIR /app
 COPY --from=build /app/target/classes classes
 COPY --from=build /app/target/lib lib
+USER 1000
+HEALTHCHECK --interval=30s --timeout=3s CMD bash -c 'echo > /dev/tcp/127.0.0.1/${PORT:-8080}'
 # JDK 21 pins a carrier while a virtual thread blocks in the SDK HTTP client; with 200 permits the default pool (one carrier per CPU) starves
 CMD ["java", "-Djdk.virtualThreadScheduler.parallelism=256", "-Djdk.virtualThreadScheduler.maxPoolSize=512", "-cp", "classes:lib/*", "com.caseware.fanout.Main"]
