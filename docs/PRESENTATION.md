@@ -54,6 +54,6 @@ SIM_LATENCY_MS=3000 docker compose -f infra/docker-compose.yml up -d --force-rec
 | Real-AWS validation of alarms/gateway enforcement | LocalStack community does not enforce API keys or `PutDashboard`; alarms module takes `enable_dashboard=true` there; wire SNS to `alarm_actions` |
 | SLO thresholds are estimates | Alarm thresholds are first guesses; tune after real-AWS data |
 | Cost table prices unverified | Recompute before quoting numbers |
-| `results/integration/` reports from 2026-10-26 | Code unchanged this round except metrics bookkeeping; `mvn verify` re-runs them |
+| `results/integration/` reports from 2026-10-26 | Refreshed 2026-10-27 (8/8 LocalStack); `mvn verify` re-runs them any time |
 
 Evidence for every layer: [results/](../results/) — unit 30/30, Bruno 18/18, Playwright 3/3, Locust 6/6 (2026-10-27).

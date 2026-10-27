@@ -29,7 +29,7 @@ Source: the assignment PDF (`LLMHistory/Staff_Java_Developer_-_Take-Home_Test 2 
 | Failure | Retry with backoff and jitter, then DLQ; fatal goes to DLQ at once | Done | unit tests; `results/integration/` (against real SQS/DynamoDB on LocalStack) |
 | Idempotency | DynamoDB conditional put with lease; duplicates run once | Done | integration test; load report shows 0 duplicate downstream calls |
 | Interfaces and contracts | `worker/Ports.java`; core has no AWS or Spring imports | Done | `ArchitectureTest` |
-| Tests or validation logic (a plus) | 20 unit + integration tests, mutation check, Bruno, Playwright, Locust | Done | `results/unit`, `results/integration`, `results/bruno`, `results/playwright`, `results/locust` |
+| Tests or validation logic (a plus) | 30 unit + integration tests, Bruno, Playwright, Locust | Done | `results/unit`, `results/integration`, `results/bruno`, `results/playwright`, `results/locust` |
 | Short README with the tradeoffs | `backend/README.md` | Done | `backend/README.md` |
 
 ## Deliverables
