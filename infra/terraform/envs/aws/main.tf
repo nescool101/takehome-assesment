@@ -37,6 +37,26 @@ module "ca" {
   providers = { aws = aws.ca }
   name      = "ca"
 }
+
+# Alarms + console dashboard per region: DLQ not empty, backlog age, worker dead-lettered (EMF counter).
+module "us_alarms" {
+  source    = "../../modules/alarms"
+  providers = { aws = aws.us }
+  name      = "us"
+}
+
+module "eu_alarms" {
+  source    = "../../modules/alarms"
+  providers = { aws = aws.eu }
+  name      = "eu"
+}
+
+module "ca_alarms" {
+  source    = "../../modules/alarms"
+  providers = { aws = aws.ca }
+  name      = "ca"
+}
+
 # Gateway in front of the ops API (auth by API key + throttling + quota). One per deployment, not per region.
 module "gateway" {
   source      = "../../modules/api_gateway"

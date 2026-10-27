@@ -1,0 +1,49 @@
+{
+ "t0": 1793110209.145238,
+ "cfg": {
+  "scenario": "PESSIMISTIC",
+  "budget": "MID",
+  "permits": 50,
+  "simLatencyMs": 300,
+  "loadSeconds": 60,
+  "activeEngagements": 2400000,
+  "firms": 12000,
+  "medianPerFirm": 40,
+  "maxPerFirm": 40000,
+  "cacheEnabled": true,
+  "tier": "TARGET",
+  "budgetCapUsd": 3000,
+  "visibilityTimeoutSeconds": 300
+ },
+ "offers": [
+  {
+   "offerId": "tpl-0@v1793110209",
+   "jobs": 800,
+   "giant": 400,
+   "probe": "1793110209-0-f0-0",
+   "badgeAt": 13.9217050075531,
+   "doneAt": 42.11502695083618
+  },
+  {
+   "offerId": "tpl-1@v1793110209",
+   "jobs": 800,
+   "giant": 400,
+   "probe": "1793110209-1-f0-0",
+   "badgeAt": 24.173948049545288
+  },
+  {
+   "offerId": "tpl-2@v1793110209",
+   "jobs": 800,
+   "giant": 400,
+   "probe": "1793110209-2-f0-0",
+   "badgeAt": 33.444414138793945
+  },
+  {
+   "offerId": "tpl-3@v1793110209",
+   "jobs": 800,
+   "giant": 400,
+   "probe": "1793110209-3-f0-0",
+   "badgeAt": 43.66707110404968
+  }
+ ]
+}

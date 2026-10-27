@@ -70,8 +70,9 @@ Needs: Docker, Java 21+, Maven, Terraform, Node, Python 3.11, Chrome. No `.env` 
 docker compose -f infra/docker-compose.yml up -d localstack
 (cd infra/terraform/envs/local && terraform init && terraform apply -auto-approve)
 
-# 2. backend + frontend harness
+# 2. backend + frontend harness + observability (jaeger, prometheus, grafana)
 docker compose -f infra/docker-compose.yml up -d --build backend frontend    # API :8080, page http://localhost:5173
+# Live load views: Grafana http://localhost:3000/d/fanout-load (anonymous) · http://localhost:5173/dashboard.html · traces http://localhost:16686
 
 # 3. validations (each writes to results/<layer>/)
 (cd backend && mvn test)                                                     # unit + LocalStack integration
@@ -85,13 +86,22 @@ Change scale or budget with `SCENARIO` and `BUDGET` (OPTIMISTIC | MID | PESSIMIS
 ## Validation results
 Evidence for every layer lives in [`results/`](results/): `unit/` (JUnit reports), `integration/`, `terraform/`, `playwright/` (screenshots), `locust/` (per-scenario reports). Diagrams are Mermaid sources in `docs/diagrams/`, rendered with beautiful-mermaid.
 
-Current (all re-run 2026-10-26):
-- **Unit + integration: 30/30** (8 of them on LocalStack; the `results/` reports predate the latest changes and need a re-run). Unit covers config, worker core (permit cap, firm fairness, idempotency, retry/DLQ, withdrawn, breaker, backoff) and the architecture rule ([unit](results/unit/all-tests.txt)). Integration runs the SQS/DynamoDB adapters on LocalStack: duplicates run once, withdrawn skipped, retry then success, fatal to DLQ, expired lease retaken, a foreign worker cannot release a claim, decisions persist, republishing never un-withdraws an offer ([integration](results/integration/)).
+Current (all re-run 2026-10-27 on `presentation`, except the design-doc numbers which are from 2026-10-26):
+- **Unit + integration: 30/30** (8 of them on LocalStack). Unit covers config, worker core (permit cap, firm fairness, idempotency, retry/DLQ, withdrawn, breaker, backoff) and the architecture rule ([unit](results/unit/all-tests.txt)). Integration runs the SQS/DynamoDB adapters on LocalStack: duplicates run once, withdrawn skipped, retry then success, fatal to DLQ, expired lease retaken, a foreign worker cannot release a claim, decisions persist, republishing never un-withdraws an offer ([integration](results/integration/)).
 - **Terraform on LocalStack:** queue + DLQ + 6 DynamoDB tables per region (the recorded apply shows 5; `locks` was added later), plus the API gateway ([apply](results/terraform/)).
-- **Ops API (Bruno):** 12 requests, 18/18 assertions ([run](results/bruno/run.json)). Collection is in [`bruno/`](bruno/).
+- **Ops API (Bruno):** 12 requests, 18/18 assertions ([run](results/bruno/run.json)). Collection is in [`bruno/`](bruno/). (The re-run surfaced that `dlq.visible` had silently become a JSON string in the Jackson refactor; fixed.)
+- **Load (Locust, 3 scenarios x cache off/on, 6 runs, 2026-10-27):** all pass: peak concurrency within permits, 0 duplicate downstream calls, empty DLQ. Measured drain 2.5x to 6.3x the Little's Law prediction; status-read p95 within 100 ms in 2 of 6 runs on LocalStack. The in-process cache cut offer reads 93% to 98% but showed no reliable speed gain, so it ships **off** by default. Report: [REPORT.md](results/locust/REPORT.md); interpretation, limits and the price/quality recommendation: [ANALYSIS.md](results/locust/ANALYSIS.md).
 - **Frontend harness (Playwright):** 3/3. Screenshots and the recorded API calls (method, URL, status) are in [`results/playwright/`](results/playwright/): badge and summary after publish, then the error states (backend down, API 500). Specs in [`frontend/playwright/`](frontend/playwright/).
 - **Load (Locust, 3 scenarios x cache off/on, 6 runs):** all pass: peak concurrency within permits, 0 duplicate downstream calls, empty DLQ. Measured drain 2.5x to 6.3x the Little's Law prediction; status-read p95 within 100 ms in 2 of 6 runs on LocalStack. The in-process cache cut offer reads 93% to 98% but showed no reliable speed gain, so it ships **off** by default. Report: [REPORT.md](results/locust/REPORT.md); interpretation, limits and the price/quality recommendation: [ANALYSIS.md](results/locust/ANALYSIS.md).
+- **Observability:** Grafana/Prometheus live dashboard, Jaeger traces (OTel javaagent), live panel, Terraform alarms — screenshots and findings in [results/observability/REPORT.md](results/observability/REPORT.md).
 - **Docs:** [design doc](docs/design-doc.md) ([PDF](docs/design-doc.pdf)), [requirements vs solution vs evidence](docs/requirements-checklist.md), [AI usage notes](docs/ai-usage-notes.md), [conversation summary](docs/conversation-summary.md), [session history (text of the chat)](docs/session-history/), [issues log](docs/issues-log.md), diagrams in [`docs/diagrams/out/`](docs/diagrams/out/).
+
+## Observability (live load)
+Three views, all running in compose, evidence and screenshots in [results/observability](results/observability/REPORT.md):
+- **Grafana** (http://localhost:3000/d/fanout-load, anonymous): queue depth/DLQ, worker in-flight vs permits, drain rate, downstream concurrency, JVM heap/threads. Prometheus scrapes the backend's `GET /prom` every 5 s.
+- **Traces**: the OpenTelemetry javaagent (attached in the Docker image, zero code change) exports the AWS SDK (SQS/DynamoDB) and downstream HTTP spans to Jaeger (http://localhost:16686).
+- **Live panel** (http://localhost:5173/dashboard.html): dependency-free page polling `/metrics` at 1 s.
+For real AWS the same worker metrics go out as CloudWatch EMF log lines, and `infra/terraform/modules/alarms` adds per-region alarms (DLQ not empty, backlog age, worker dead-lettered) plus a CloudWatch dashboard.
 
 ## API Gateway (protects the ops API)
 In front of the ops API sits API Gateway ([`infra/terraform/modules/api_gateway`](infra/terraform/modules/api_gateway/main.tf)):

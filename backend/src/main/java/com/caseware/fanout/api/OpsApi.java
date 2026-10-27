@@ -30,14 +30,17 @@ public final class OpsApi {
     private final String queueUrl, dlqUrl;
     private final DynamoRegistry registry;
     private final java.util.function.Supplier<String> downstreamStats;
+    private final java.util.function.Supplier<Map<String, Long>> workerStats;
     private final String configJson;
     private final HttpServer server;
 
     public OpsApi(int port, SqsJobSource source, DynamoIdempotency idem, DynamoOfferCatalog catalog,
                   DynamoDecisions decisions, DynamoRegistry registry, SqsClient sqs, String queueUrl, String dlqUrl,
-                  java.util.function.Supplier<String> downstreamStats, String configJson) throws IOException {
+                  java.util.function.Supplier<String> downstreamStats, String configJson,
+                  java.util.function.Supplier<Map<String, Long>> workerStats) throws IOException {
         this.downstreamStats = downstreamStats;
         this.configJson = configJson;
+        this.workerStats = workerStats;
         this.source = source;
         this.idem = idem;
         this.catalog = catalog;
@@ -67,6 +70,7 @@ public final class OpsApi {
             else if (!authorized(x, m, path)) send(x, 403, err("forbidden"));
             else if (m.equals("GET") && path.equals("/health")) send(x, 200, obj("ok", true));
             else if (m.equals("GET") && path.equals("/metrics")) send(x, 200, metrics());
+            else if (m.equals("GET") && path.equals("/prom")) send(x, 200, prom());
             else if (m.equals("POST") && path.equals("/admin/publishes")) publish(x);
             else if (o.matches() && m.equals("GET") && o.group(2).equals("status")) send(x, 200, offerStatus(o.group(1)));
             else if (o.matches() && m.equals("POST") && o.group(2).equals("withdraw")) withdraw(x, o.group(1));
@@ -198,12 +202,35 @@ public final class OpsApi {
                 "catalogReads", catalog.reads.get(), "downstream", JSON.readTree(downstreamStats.get()), "config", JSON.readTree(configJson));
     }
 
-    private Object depth(String url) {
+    /** Prometheus text format (scraped every few seconds): queue/DLQ depth, worker counters, downstream concurrency, JVM basics. */
+    private String prom() throws IOException {
+        var down = JSON.readTree(downstreamStats.get());
+        var b = new StringBuilder();
+        b.append("fanout_queue_visible ").append(depth(queueUrl).get("visible")).append('\n')
+         .append("fanout_queue_inflight ").append(depth(queueUrl).get("inFlight")).append('\n')
+         .append("fanout_dlq_visible ").append(depth(dlqUrl).get("visible")).append('\n')
+         .append("fanout_published_total ").append(registry.count()).append('\n')
+         .append("fanout_downstream_calls_total ").append(down.get("calls").asLong()).append('\n')
+         .append("fanout_downstream_in_use ").append(down.get("inUse").asLong()).append('\n')
+         .append("fanout_downstream_peak ").append(down.get("peakConcurrent").asLong()).append('\n')
+         .append("fanout_downstream_duplicate_calls_total ").append(down.get("duplicateCalls").asLong()).append('\n');
+        for (var e : workerStats.get().entrySet())
+            b.append("fanout_worker_").append(e.getKey().toLowerCase())
+             .append(e.getKey().equals("InFlight") ? " " : "_total ").append(e.getValue()).append('\n');
+        var rt = Runtime.getRuntime();
+        b.append("fanout_permits ").append(JSON.readTree(configJson).path("permits").asLong(0)).append('\n')
+         .append("jvm_memory_used_bytes ").append(rt.totalMemory() - rt.freeMemory()).append('\n')
+         .append("jvm_memory_max_bytes ").append(rt.maxMemory()).append('\n')
+         .append("jvm_threads ").append(Thread.activeCount()).append('\n');
+        return b.toString();
+    }
+
+    private Map<String, Object> depth(String url) {
         var a = sqs.getQueueAttributes(b -> b.queueUrl(url).attributeNames(
                 QueueAttributeName.APPROXIMATE_NUMBER_OF_MESSAGES,
                 QueueAttributeName.APPROXIMATE_NUMBER_OF_MESSAGES_NOT_VISIBLE)).attributes();
-        return obj("visible", a.get(QueueAttributeName.APPROXIMATE_NUMBER_OF_MESSAGES),
-                "inFlight", a.get(QueueAttributeName.APPROXIMATE_NUMBER_OF_MESSAGES_NOT_VISIBLE));
+        return obj("visible", Long.parseLong(a.get(QueueAttributeName.APPROXIMATE_NUMBER_OF_MESSAGES)),
+                "inFlight", Long.parseLong(a.get(QueueAttributeName.APPROXIMATE_NUMBER_OF_MESSAGES_NOT_VISIBLE)));
     }
 
     private static Map<String, Object> obj(Object... kv) {

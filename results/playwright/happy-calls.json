@@ -15,6 +15,26 @@
     "status": 200
   },
   {
+    "method": "GET",
+    "url": "http://localhost:8080/engagements/e1/status",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "http://localhost:8080/engagements/e1/status",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "http://localhost:8080/engagements/e1/status",
+    "status": 200
+  },
+  {
+    "method": "GET",
+    "url": "http://localhost:8080/engagements/e1/status",
+    "status": 200
+  },
+  {
     "method": "POST",
     "url": "http://localhost:8080/engagements/e1/decision",
     "status": 200

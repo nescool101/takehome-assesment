@@ -1,0 +1,61 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Fan-out live load</title>
+<!-- LIVE OPS PANEL: polls the ops API /metrics every second. Works standalone (no Prometheus/Grafana needed). -->
+<style>
+  body { font: 15px system-ui; max-width: 720px; margin: 2rem auto; padding: 0 1rem }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .75rem; margin: 1rem 0 }
+  .card { padding: .75rem 1rem; border-radius: 8px; background: #f2f4f8 }
+  .card b { display: block; font-size: 1.6rem }
+  .red { background: #fde2e2 } .green { background: #e2f7e8 }
+  h1 { font-size: 1.1rem } small { color: #666 }
+</style>
+<h1>Fan-out worker — live load <small id="age"></small></h1>
+<div class="grid">
+  <div class="card">Queue visible<b id="q">–</b></div>
+  <div class="card">Queue in-flight<b id="qi">–</b></div>
+  <div class="card" id="dlqCard">DLQ<b id="dlq">–</b></div>
+  <div class="card">Downstream in use<b id="du">–</b></div>
+  <div class="card">Downstream peak<b id="dp">–</b></div>
+  <div class="card">Duplicate calls<b id="dd">–</b></div>
+  <div class="card">Done / 10s<b id="rate">–</b></div>
+  <div class="card">Published<b id="pub">–</b></div>
+  <div class="card">Permits<b id="permits">–</b></div>
+</div>
+<canvas id="spark" width="700" height="90"></canvas>
+<small>downstream calls in use over the last 60 polls · <a href="/" id="harness">back to harness</a></small>
+<script>
+const API = new URLSearchParams(location.search).get("api") || "http://localhost:8080";
+const hist = []; let lastDone = null, lastAt = 0;
+const set = (id, v) => document.getElementById(id).textContent = v;
+
+function spark() {
+  const c = document.getElementById("spark"), x = c.getContext("2d");
+  x.clearRect(0, 0, c.width, c.height);
+  if (hist.length < 2) return;
+  const max = Math.max(1, ...hist);
+  x.beginPath();
+  hist.forEach((v, i) => x.lineTo(i / (hist.length - 1) * (c.width - 4) + 2, c.height - 4 - v / max * (c.height - 10)));
+  x.strokeStyle = "#246"; x.lineWidth = 2; x.stroke();
+}
+
+async function poll() {
+  try {
+    const r = await fetch(API + "/metrics");
+    const m = await r.json();
+    set("q", m.queue.visible); set("qi", m.queue.inFlight);
+    set("dlq", m.dlq.visible);
+    document.getElementById("dlqCard").className = "card " + (Number(m.dlq.visible) > 0 ? "red" : "green");
+    set("du", m.downstream.inUse); set("dp", m.downstream.peakConcurrent); set("dd", m.downstream.duplicateCalls);
+    document.getElementById("dd").style.color = Number(m.downstream.duplicateCalls) > 0 ? "#d33" : "#2a2";
+    set("pub", m.published); set("permits", m.config.permits);
+    if (lastDone !== null) set("rate", Math.max(0, m.downstream.calls - lastDone));
+    lastDone = m.downstream.calls;
+    hist.push(Number(m.downstream.inUse));
+    if (hist.length > 60) hist.shift();
+    spark();
+    document.getElementById("age").textContent = "· updated " + new Date().toLocaleTimeString();
+  } catch (e) { document.getElementById("age").textContent = "· API unreachable"; }
+}
+setInterval(poll, 1000); poll();
+</script>

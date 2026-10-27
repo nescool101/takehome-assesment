@@ -1,0 +1,28 @@
+{
+ "t0": 1793109892.182613,
+ "cfg": {
+  "scenario": "OPTIMISTIC",
+  "budget": "MID",
+  "permits": 200,
+  "simLatencyMs": 300,
+  "loadSeconds": 60,
+  "activeEngagements": 800000,
+  "firms": 4000,
+  "medianPerFirm": 40,
+  "maxPerFirm": 40000,
+  "cacheEnabled": false,
+  "tier": "TARGET",
+  "budgetCapUsd": 3000,
+  "visibilityTimeoutSeconds": 300
+ },
+ "offers": [
+  {
+   "offerId": "tpl-0@v1793109892",
+   "jobs": 800,
+   "giant": 400,
+   "probe": "1793109892-0-f0-0",
+   "doneAt": 12.069470167160034,
+   "badgeAt": 12.084240198135376
+  }
+ ]
+}

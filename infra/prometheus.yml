@@ -1,0 +1,7 @@
+scrape_configs:
+  - job_name: fanout-backend
+    # 5s keeps the demo live without hammering the SQS attribute calls and the registry COUNT scan behind /prom
+    scrape_interval: 5s
+    metrics_path: /prom
+    static_configs:
+      - targets: ["backend:8080"]

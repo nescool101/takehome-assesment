@@ -18,7 +18,7 @@
           "statusText": "OK",
           "headers": {
             "access-control-allow-headers": "content-type,x-admin-token",
-            "date": "Mon, 26 Oct 2026 12:46:25 GMT",
+            "date": "Tue, 27 Oct 2026 14:04:27 GMT",
             "content-type": "application/json",
             "access-control-allow-origin": "*",
             "content-length": "11"
@@ -27,15 +27,15 @@
             "ok": true
           },
           "url": "http://localhost/health",
-          "responseTime": 10,
-          "duration": 10,
+          "responseTime": 11,
+          "duration": 11,
           "size": 11
         },
         "error": null,
         "status": "pass",
         "assertionResults": [
           {
-            "uid": "ZzIFu-wKxCM7qtFOPgmhk",
+            "uid": "Nv-ikeElVZNalNE5Rl84S",
             "lhsExpr": "res.status",
             "rhsExpr": "eq 200",
             "rhsOperand": "200",
@@ -47,7 +47,7 @@
         "preRequestTestResults": [],
         "postResponseTestResults": [],
         "shouldStopRunnerExecution": false,
-        "runDuration": 0.039845,
+        "runDuration": 0.044246334,
         "name": "health",
         "suitename": "/Users/nescaomac/Documents/GitHub/takehome-assesment/bruno/health",
         "path": "health",
@@ -63,32 +63,32 @@
           "headers": {
             "content-type": "application/json"
           },
-          "data": "{\"templateId\":\"tpl-bruno\",\"version\":\"v1793018785\",\"engagements\":[{\"id\":\"bru1\",\"firmId\":\"f1\"},{\"id\":\"bru2\",\"firmId\":\"f1\"}]}"
+          "data": "{\"templateId\":\"tpl-bruno\",\"version\":\"v1793109867\",\"engagements\":[{\"id\":\"bru1\",\"firmId\":\"f1\"},{\"id\":\"bru2\",\"firmId\":\"f1\"}]}"
         },
         "response": {
           "status": 202,
           "statusText": "Accepted",
           "headers": {
             "access-control-allow-headers": "content-type,x-admin-token",
-            "date": "Mon, 26 Oct 2026 12:46:25 GMT",
+            "date": "Tue, 27 Oct 2026 14:04:27 GMT",
             "content-type": "application/json",
             "access-control-allow-origin": "*",
             "content-length": "48"
           },
           "data": {
-            "offerId": "tpl-bruno@v1793018785",
+            "offerId": "tpl-bruno@v1793109867",
             "enqueued": 2
           },
           "url": "http://localhost/admin/publishes",
-          "responseTime": 17,
-          "duration": 17,
+          "responseTime": 50,
+          "duration": 50,
           "size": 48
         },
         "error": null,
         "status": "pass",
         "assertionResults": [
           {
-            "uid": "IIl-LE4j3Nf2tE1kLjxCl",
+            "uid": "CIbDqCFUaeS_aK_fk8-DJ",
             "lhsExpr": "res.status",
             "rhsExpr": "eq 202",
             "rhsOperand": "202",
@@ -96,7 +96,7 @@
             "status": "pass"
           },
           {
-            "uid": "0LNUTN2K6dF3RqeKH8XfM",
+            "uid": "TObt4YGc0dg2qvtVmWnPr",
             "lhsExpr": "res.body.enqueued",
             "rhsExpr": "eq 2",
             "rhsOperand": "2",
@@ -108,7 +108,7 @@
         "preRequestTestResults": [],
         "postResponseTestResults": [],
         "shouldStopRunnerExecution": false,
-        "runDuration": 0.097174208,
+        "runDuration": 0.117772917,
         "name": "publish",
         "suitename": "/Users/nescaomac/Documents/GitHub/takehome-assesment/bruno/publish",
         "path": "publish",
@@ -131,7 +131,7 @@
           "statusText": "Bad Request",
           "headers": {
             "access-control-allow-headers": "content-type,x-admin-token",
-            "date": "Mon, 26 Oct 2026 12:46:25 GMT",
+            "date": "Tue, 27 Oct 2026 14:04:27 GMT",
             "content-type": "application/json",
             "access-control-allow-origin": "*",
             "content-length": "30"
@@ -140,15 +140,15 @@
             "error": "missing templateId"
           },
           "url": "http://localhost/admin/publishes",
-          "responseTime": 2,
-          "duration": 2,
+          "responseTime": 3,
+          "duration": 3,
           "size": 30
         },
         "error": null,
         "status": "pass",
         "assertionResults": [
           {
-            "uid": "aSeFOtTfuW0bxecEHO80J",
+            "uid": "c4VHx4Oh0eMg8k19tX7M_",
             "lhsExpr": "res.status",
             "rhsExpr": "eq 400",
             "rhsOperand": "400",
@@ -160,7 +160,7 @@
         "preRequestTestResults": [],
         "postResponseTestResults": [],
         "shouldStopRunnerExecution": false,
-        "runDuration": 0.005058334,
+        "runDuration": 0.005229375,
         "name": "publish invalid body",
         "suitename": "/Users/nescaomac/Documents/GitHub/takehome-assesment/bruno/publish-invalid-body",
         "path": "publish-invalid-body",
@@ -172,7 +172,7 @@
         },
         "request": {
           "method": "GET",
-          "url": "http://localhost:8080/admin/offers/tpl-bruno@v1793018785/status",
+          "url": "http://localhost:8080/admin/offers/tpl-bruno@v1793109867/status",
           "headers": {
             "content-type": null
           }
@@ -182,28 +182,28 @@
           "statusText": "OK",
           "headers": {
             "access-control-allow-headers": "content-type,x-admin-token",
-            "date": "Mon, 26 Oct 2026 12:46:25 GMT",
+            "date": "Tue, 27 Oct 2026 14:04:27 GMT",
             "content-type": "application/json",
             "access-control-allow-origin": "*",
             "content-length": "97"
           },
           "data": {
-            "offerId": "tpl-bruno@v1793018785",
+            "offerId": "tpl-bruno@v1793109867",
             "published": 2,
             "done": 0,
             "inFlightOrQueued": 2,
             "withdrawn": false
           },
-          "url": "http://localhost/admin/offers/tpl-bruno@v1793018785/status",
-          "responseTime": 9,
-          "duration": 9,
+          "url": "http://localhost/admin/offers/tpl-bruno@v1793109867/status",
+          "responseTime": 20,
+          "duration": 20,
           "size": 97
         },
         "error": null,
         "status": "pass",
         "assertionResults": [
           {
-            "uid": "FqT41OWg9my_eQ5tP6J-s",
+            "uid": "0nsx9vN__nrtt3qWKLa7V",
             "lhsExpr": "res.status",
             "rhsExpr": "eq 200",
             "rhsOperand": "200",
@@ -211,7 +211,7 @@
             "status": "pass"
           },
           {
-            "uid": "188O4yA-PuE_ZKoDV2ByN",
+            "uid": "pCGc_gBbDZMglYr3OU4vy",
             "lhsExpr": "res.body.published",
             "rhsExpr": "eq 2",
             "rhsOperand": "2",
@@ -223,7 +223,7 @@
         "preRequestTestResults": [],
         "postResponseTestResults": [],
         "shouldStopRunnerExecution": false,
-        "runDuration": 0.011589833,
+        "runDuration": 0.022879042,
         "name": "offer status",
         "suitename": "/Users/nescaomac/Documents/GitHub/takehome-assesment/bruno/offer-status",
         "path": "offer-status",
@@ -245,7 +245,7 @@
           "statusText": "OK",
           "headers": {
             "access-control-allow-headers": "content-type,x-admin-token",
-            "date": "Mon, 26 Oct 2026 12:46:26 GMT",
+            "date": "Tue, 27 Oct 2026 14:04:28 GMT",
             "content-type": "application/json",
             "access-control-allow-origin": "*",
             "content-length": "134"
@@ -254,20 +254,20 @@
             "engagementId": "bru1",
             "pending": true,
             "offers": [
-              "tpl-bruno@v1793018785"
+              "tpl-bruno@v1793109867"
             ],
-            "summary": "Template update available: tpl-bruno@v1793018785"
+            "summary": "Template update available: tpl-bruno@v1793109867"
           },
           "url": "http://localhost/engagements/bru1/status",
-          "responseTime": 22,
-          "duration": 22,
+          "responseTime": 38,
+          "duration": 38,
           "size": 134
         },
         "error": null,
         "status": "pass",
         "assertionResults": [
           {
-            "uid": "ic2YPGJmWGLMt_ZsQeP5E",
+            "uid": "khfu6I2kJzm1AvhnvDqM9",
             "lhsExpr": "res.status",
             "rhsExpr": "eq 200",
             "rhsOperand": "200",
@@ -275,7 +275,7 @@
             "status": "pass"
           },
           {
-            "uid": "YIE98q5CNLfRwLwGbeNFd",
+            "uid": "MnIkanftOXaR1nJBcl977",
             "lhsExpr": "res.body.pending",
             "rhsExpr": "eq true",
             "rhsOperand": "true",
@@ -287,7 +287,7 @@
         "preRequestTestResults": [],
         "postResponseTestResults": [],
         "shouldStopRunnerExecution": false,
-        "runDuration": 1.578829125,
+        "runDuration": 1.59262225,
         "name": "engagement badge appears after fan-out",
         "suitename": "/Users/nescaomac/Documents/GitHub/takehome-assesment/bruno/engagement-badge-appears-after-fan-out",
         "path": "engagement-badge-appears-after-fan-out",
@@ -310,7 +310,7 @@
           "statusText": "OK",
           "headers": {
             "access-control-allow-headers": "content-type,x-admin-token",
-            "date": "Mon, 26 Oct 2026 12:46:26 GMT",
+            "date": "Tue, 27 Oct 2026 14:04:29 GMT",
             "content-type": "application/json",
             "access-control-allow-origin": "*",
             "content-length": "64"
@@ -322,15 +322,15 @@
             "summary": ""
           },
           "url": "http://localhost/engagements/bru1/decision",
-          "responseTime": 22,
-          "duration": 22,
+          "responseTime": 53,
+          "duration": 53,
           "size": 64
         },
         "error": null,
         "status": "pass",
         "assertionResults": [
           {
-            "uid": "h5LuDL3Ig9d2YOhsxKOW7",
+            "uid": "_pIYcFzOqgUF-1u5E7JkQ",
             "lhsExpr": "res.status",
             "rhsExpr": "eq 200",
             "rhsOperand": "200",
@@ -338,7 +338,7 @@
             "status": "pass"
           },
           {
-            "uid": "x2mEOvznMrijVgMsO0Jxd",
+            "uid": "nJs0sYJO2X6LcTBtyPILT",
             "lhsExpr": "res.body.pending",
             "rhsExpr": "eq false",
             "rhsOperand": "false",
@@ -350,7 +350,7 @@
         "preRequestTestResults": [],
         "postResponseTestResults": [],
         "shouldStopRunnerExecution": false,
-        "runDuration": 0.027445208,
+        "runDuration": 0.059811375,
         "name": "decline clears badge",
         "suitename": "/Users/nescaomac/Documents/GitHub/takehome-assesment/bruno/decline-clears-badge",
         "path": "decline-clears-badge",
@@ -362,7 +362,7 @@
         },
         "request": {
           "method": "POST",
-          "url": "http://localhost:8080/admin/offers/tpl-bruno@v1793018785/withdraw",
+          "url": "http://localhost:8080/admin/offers/tpl-bruno@v1793109867/withdraw",
           "headers": {
             "content-type": "application/json"
           },
@@ -373,28 +373,28 @@
           "statusText": "OK",
           "headers": {
             "access-control-allow-headers": "content-type,x-admin-token",
-            "date": "Mon, 26 Oct 2026 12:46:26 GMT",
+            "date": "Tue, 27 Oct 2026 14:04:29 GMT",
             "content-type": "application/json",
             "access-control-allow-origin": "*",
             "content-length": "96"
           },
           "data": {
-            "offerId": "tpl-bruno@v1793018785",
+            "offerId": "tpl-bruno@v1793109867",
             "published": 2,
             "done": 2,
             "inFlightOrQueued": 0,
             "withdrawn": true
           },
-          "url": "http://localhost/admin/offers/tpl-bruno@v1793018785/withdraw",
-          "responseTime": 15,
-          "duration": 15,
+          "url": "http://localhost/admin/offers/tpl-bruno@v1793109867/withdraw",
+          "responseTime": 19,
+          "duration": 19,
           "size": 96
         },
         "error": null,
         "status": "pass",
         "assertionResults": [
           {
-            "uid": "gMs3ZyxNEyHEJo4Vj_cHo",
+            "uid": "ZSNr2eFoFVrng_171DvwP",
             "lhsExpr": "res.body.withdrawn",
             "rhsExpr": "eq true",
             "rhsOperand": "true",
@@ -406,7 +406,7 @@
         "preRequestTestResults": [],
         "postResponseTestResults": [],
         "shouldStopRunnerExecution": false,
-        "runDuration": 0.018318334,
+        "runDuration": 0.023878125,
         "name": "withdraw",
         "suitename": "/Users/nescaomac/Documents/GitHub/takehome-assesment/bruno/withdraw",
         "path": "withdraw",
@@ -428,7 +428,7 @@
           "statusText": "OK",
           "headers": {
             "access-control-allow-headers": "content-type,x-admin-token",
-            "date": "Mon, 26 Oct 2026 12:46:26 GMT",
+            "date": "Tue, 27 Oct 2026 14:04:29 GMT",
             "content-type": "application/json",
             "access-control-allow-origin": "*",
             "content-length": "64"
@@ -440,15 +440,15 @@
             "summary": ""
           },
           "url": "http://localhost/engagements/bru2/status",
-          "responseTime": 21,
-          "duration": 21,
+          "responseTime": 31,
+          "duration": 31,
           "size": 64
         },
         "error": null,
         "status": "pass",
         "assertionResults": [
           {
-            "uid": "ZN4eljJdIQ8ZnXC8ql8eW",
+            "uid": "ztz_1UPOCbMj1pp5gHnZB",
             "lhsExpr": "res.body.pending",
             "rhsExpr": "eq false",
             "rhsOperand": "false",
@@ -460,7 +460,7 @@
         "preRequestTestResults": [],
         "postResponseTestResults": [],
         "shouldStopRunnerExecution": false,
-        "runDuration": 0.024406333,
+        "runDuration": 0.034718291,
         "name": "withdrawn offer shows no badge",
         "suitename": "/Users/nescaomac/Documents/GitHub/takehome-assesment/bruno/withdrawn-offer-shows-no-badge",
         "path": "withdrawn-offer-shows-no-badge",
@@ -482,10 +482,10 @@
           "statusText": "OK",
           "headers": {
             "access-control-allow-headers": "content-type,x-admin-token",
-            "date": "Mon, 26 Oct 2026 12:46:26 GMT",
+            "date": "Tue, 27 Oct 2026 14:04:29 GMT",
             "content-type": "application/json",
             "access-control-allow-origin": "*",
-            "content-length": "434"
+            "content-length": "436"
           },
           "data": {
             "queue": {
@@ -496,10 +496,10 @@
               "visible": 0,
               "inFlight": 0
             },
-            "published": 8,
-            "catalogReads": 28,
+            "published": 949,
+            "catalogReads": 70,
             "downstream": {
-              "calls": 8,
+              "calls": 5,
               "peakConcurrent": 2,
               "inUse": 0,
               "duplicateCalls": 0
@@ -521,15 +521,15 @@
             }
           },
           "url": "http://localhost/metrics",
-          "responseTime": 5,
-          "duration": 5,
-          "size": 434
+          "responseTime": 8,
+          "duration": 8,
+          "size": 436
         },
         "error": null,
         "status": "pass",
         "assertionResults": [
           {
-            "uid": "dyx4RCU_eb06FW-74FqvN",
+            "uid": "e7mRAIgLxnelbHH9V4hDz",
             "lhsExpr": "res.status",
             "rhsExpr": "eq 200",
             "rhsOperand": "200",
@@ -537,7 +537,7 @@
             "status": "pass"
           },
           {
-            "uid": "9y0aGZ1PIdGn66ae6R5eC",
+            "uid": "nf0xjfn6c9fy7_yDQ9Wqg",
             "lhsExpr": "res.body.dlq.visible",
             "rhsExpr": "eq 0",
             "rhsOperand": "0",
@@ -549,7 +549,7 @@
         "preRequestTestResults": [],
         "postResponseTestResults": [],
         "shouldStopRunnerExecution": false,
-        "runDuration": 0.009828291,
+        "runDuration": 0.013721959,
         "name": "metrics",
         "suitename": "/Users/nescaomac/Documents/GitHub/takehome-assesment/bruno/metrics",
         "path": "metrics",
@@ -565,32 +565,32 @@
           "headers": {
             "content-type": "application/json"
           },
-          "data": "{\"version\":\"v1793018786\",\"templateId\":\"tpl-bruno-order\",\"note\":\"ignored\",\"engagements\":[{\"firmId\":\"f1\",\"id\":\"bro1\",\"name\":\"extra\"},{\"id\":\"bro1\",\"firmId\":\"f1\"}]}"
+          "data": "{\"version\":\"v1793109869\",\"templateId\":\"tpl-bruno-order\",\"note\":\"ignored\",\"engagements\":[{\"firmId\":\"f1\",\"id\":\"bro1\",\"name\":\"extra\"},{\"id\":\"bro1\",\"firmId\":\"f1\"}]}"
         },
         "response": {
           "status": 202,
           "statusText": "Accepted",
           "headers": {
             "access-control-allow-headers": "content-type,x-admin-token",
-            "date": "Mon, 26 Oct 2026 12:46:26 GMT",
+            "date": "Tue, 27 Oct 2026 14:04:29 GMT",
             "content-type": "application/json",
             "access-control-allow-origin": "*",
             "content-length": "54"
           },
           "data": {
-            "offerId": "tpl-bruno-order@v1793018786",
+            "offerId": "tpl-bruno-order@v1793109869",
             "enqueued": 1
           },
           "url": "http://localhost/admin/publishes",
-          "responseTime": 12,
-          "duration": 12,
+          "responseTime": 25,
+          "duration": 25,
           "size": 54
         },
         "error": null,
         "status": "pass",
         "assertionResults": [
           {
-            "uid": "TB-KfncbIWiR7QQJILPw4",
+            "uid": "2ajhrdsfF_wiMrWyZi6Oa",
             "lhsExpr": "res.status",
             "rhsExpr": "eq 202",
             "rhsOperand": "202",
@@ -598,7 +598,7 @@
             "status": "pass"
           },
           {
-            "uid": "9BL5HOzF-Znid0wNdpGvz",
+            "uid": "WzmsbiJdKIdRj_C1y10De",
             "lhsExpr": "res.body.enqueued",
             "rhsExpr": "eq 1",
             "rhsOperand": "1",
@@ -610,7 +610,7 @@
         "preRequestTestResults": [],
         "postResponseTestResults": [],
         "shouldStopRunnerExecution": false,
-        "runDuration": 0.015852709,
+        "runDuration": 0.030829208,
         "name": "publish accepts any field order and extra fields",
         "suitename": "/Users/nescaomac/Documents/GitHub/takehome-assesment/bruno/publish-field-order-and-extras",
         "path": "publish-field-order-and-extras",
@@ -633,7 +633,7 @@
           "statusText": "Bad Request",
           "headers": {
             "access-control-allow-headers": "content-type,x-admin-token",
-            "date": "Mon, 26 Oct 2026 12:46:27 GMT",
+            "date": "Tue, 27 Oct 2026 14:04:29 GMT",
             "content-type": "application/json",
             "access-control-allow-origin": "*",
             "content-length": "37"
@@ -642,15 +642,15 @@
             "error": "unknown offer tp1-typo@v0"
           },
           "url": "http://localhost/admin/offers/tp1-typo@v0/withdraw",
-          "responseTime": 4,
-          "duration": 4,
+          "responseTime": 6,
+          "duration": 6,
           "size": 37
         },
         "error": null,
         "status": "pass",
         "assertionResults": [
           {
-            "uid": "8p5I1JO0_3vkjqjMvorEp",
+            "uid": "b99Q8gFlzqxYK2MDNteOs",
             "lhsExpr": "res.status",
             "rhsExpr": "eq 400",
             "rhsOperand": "400",
@@ -662,7 +662,7 @@
         "preRequestTestResults": [],
         "postResponseTestResults": [],
         "shouldStopRunnerExecution": false,
-        "runDuration": 0.006031541,
+        "runDuration": 0.008329166,
         "name": "withdraw rejects an unknown offer",
         "suitename": "/Users/nescaomac/Documents/GitHub/takehome-assesment/bruno/withdraw-unknown-offer",
         "path": "withdraw-unknown-offer",
@@ -685,7 +685,7 @@
           "statusText": "Bad Request",
           "headers": {
             "access-control-allow-headers": "content-type,x-admin-token",
-            "date": "Mon, 26 Oct 2026 12:46:27 GMT",
+            "date": "Tue, 27 Oct 2026 14:04:29 GMT",
             "content-type": "application/json",
             "access-control-allow-origin": "*",
             "content-length": "65"
@@ -702,7 +702,7 @@
         "status": "pass",
         "assertionResults": [
           {
-            "uid": "CiFguKuMCod2NpcUw08mT",
+            "uid": "d6zzVOk6q8D5I4SQpoQF5",
             "lhsExpr": "res.status",
             "rhsExpr": "eq 400",
             "rhsOperand": "400",
@@ -714,7 +714,7 @@
         "preRequestTestResults": [],
         "postResponseTestResults": [],
         "shouldStopRunnerExecution": false,
-        "runDuration": 0.003527375,
+        "runDuration": 0.003582125,
         "name": "publish rejects ids with separators or quotes",
         "suitename": "/Users/nescaomac/Documents/GitHub/takehome-assesment/bruno/publish-rejects-bad-id",
         "path": "publish-rejects-bad-id",

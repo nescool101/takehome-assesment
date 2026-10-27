@@ -3,7 +3,7 @@ services:
     image: localstack/localstack:3.8  # pinned; newer tags may need an auth token
     ports: ["4566:4566"]
     environment:
-      SERVICES: sqs,dynamodb,apigateway
+      SERVICES: sqs,dynamodb,apigateway,cloudwatch
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:4566/_localstack/health"]
       interval: 5s
@@ -25,9 +25,40 @@ services:
       SIM_LATENCY_MS: ${SIM_LATENCY_MS:-300}
       CACHE_ENABLED: ${CACHE_ENABLED:-false}
       CACHE_TTL_SECONDS: ${CACHE_TTL_SECONDS:-5}
+      METRICS_FLUSH_SECONDS: ${METRICS_FLUSH_SECONDS:-5}
+      JAVA_TOOL_OPTIONS: -javaagent:/app/otel.jar
+      OTEL_SERVICE_NAME: fanout-worker
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: ${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-http://jaeger:4318/v1/traces}
+      OTEL_METRICS_EXPORTER: none
+      OTEL_LOGS_EXPORTER: none
     # queues/tables must exist first: terraform apply (envs/local) after localstack is healthy
     restart: on-failure
   frontend:
     image: nginx:alpine
     ports: ["5173:80"]
-    volumes: ["../frontend/index.html:/usr/share/nginx/html/index.html:ro"]
+    volumes:
+      - ../frontend/index.html:/usr/share/nginx/html/index.html:ro
+      - ../frontend/dashboard.html:/usr/share/nginx/html/dashboard.html:ro
+
+  # Traces: the OTel agent in the backend exports OTLP straight to Jaeger (all-in-one has a native OTLP collector).
+  jaeger:
+    image: jaegertracing/all-in-one:1.62.0
+    ports: ["16686:16686"]
+
+  # Load in real time: Prometheus scrapes the backend /prom endpoint, Grafana reads Prometheus.
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    ports: ["9090:9090"]
+    volumes: ["./prometheus.yml:/etc/prometheus/prometheus.yml:ro"]
+
+  grafana:
+    image: grafana/grafana:11.1.0
+    ports: ["3000:3000"]
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"  # demo: no login
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_AUTH_DISABLE_LOGIN_FORM: "true"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro

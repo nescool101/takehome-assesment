@@ -1,0 +1,61 @@
+[0m[1mmodule.us_alarms.aws_cloudwatch_metric_alarm.dlq_not_empty: Refreshing state... [id=us-dlq-not-empty][0m
+[0m[1mmodule.us.aws_dynamodb_table.offers: Refreshing state... [id=us-offers][0m
+[0m[1mmodule.us.aws_dynamodb_table.decisions: Refreshing state... [id=us-decisions][0m
+[0m[1mmodule.us_alarms.aws_cloudwatch_metric_alarm.backlog_age: Refreshing state... [id=us-backlog-age][0m
+[0m[1mmodule.us.aws_dynamodb_table.locks: Refreshing state... [id=us-locks][0m
+[0m[1mmodule.gateway.aws_api_gateway_rest_api.ops: Refreshing state... [id=8z88j3abe9][0m
+[0m[1mmodule.us.aws_dynamodb_table.idempotency: Refreshing state... [id=us-idempotency][0m
+[0m[1mmodule.us.aws_dynamodb_table.checkpoints: Refreshing state... [id=us-checkpoints][0m
+[0m[1mmodule.gateway.aws_api_gateway_api_key.ops: Refreshing state... [id=l8fdyd9c25][0m
+[0m[1mmodule.us.aws_sqs_queue.dlq: Refreshing state... [id=http://sqs.us-east-1.localhost.localstack.cloud:4566/000000000000/us-fanout-dlq][0m
+[0m[1mmodule.us.aws_dynamodb_table.registry: Refreshing state... [id=us-registry][0m
+[0m[1mmodule.us_alarms.aws_cloudwatch_metric_alarm.worker_dead_lettered: Refreshing state... [id=us-worker-dead-lettered][0m
+[0m[1mmodule.gateway.aws_api_gateway_resource.proxy: Refreshing state... [id=5o69oy2lp6][0m
+[0m[1mmodule.us.aws_sqs_queue.work: Refreshing state... [id=http://sqs.us-east-1.localhost.localstack.cloud:4566/000000000000/us-fanout][0m
+[0m[1mmodule.gateway.aws_api_gateway_method.options: Refreshing state... [id=agm-8z88j3abe9-5o69oy2lp6-OPTIONS][0m
+[0m[1mmodule.gateway.aws_api_gateway_method.any: Refreshing state... [id=agm-8z88j3abe9-5o69oy2lp6-ANY][0m
+[0m[1mmodule.gateway.aws_api_gateway_integration.backend_options: Refreshing state... [id=agi-8z88j3abe9-5o69oy2lp6-OPTIONS][0m
+[0m[1mmodule.gateway.aws_api_gateway_integration.backend: Refreshing state... [id=agi-8z88j3abe9-5o69oy2lp6-ANY][0m
+[0m[1mmodule.gateway.aws_api_gateway_deployment.d: Refreshing state... [id=a3m3e6e9ba][0m
+[0m[1mmodule.gateway.aws_api_gateway_stage.v1: Refreshing state... [id=ags-8z88j3abe9-v1][0m
+[0m[1mmodule.gateway.aws_api_gateway_usage_plan.plan: Refreshing state... [id=qfom2n99j4][0m
+[0m[1mmodule.gateway.aws_api_gateway_usage_plan_key.k: Refreshing state... [id=l8fdyd9c25][0m
+[0m[1mmodule.eu.aws_dynamodb_table.offers: Refreshing state... [id=eu-offers][0m
+[0m[1mmodule.eu.aws_dynamodb_table.locks: Refreshing state... [id=eu-locks][0m
+[0m[1mmodule.eu_alarms.aws_cloudwatch_metric_alarm.dlq_not_empty: Refreshing state... [id=eu-dlq-not-empty][0m
+[0m[1mmodule.eu_alarms.aws_cloudwatch_metric_alarm.worker_dead_lettered: Refreshing state... [id=eu-worker-dead-lettered][0m
+[0m[1mmodule.eu.aws_dynamodb_table.registry: Refreshing state... [id=eu-registry][0m
+[0m[1mmodule.eu_alarms.aws_cloudwatch_metric_alarm.backlog_age: Refreshing state... [id=eu-backlog-age][0m
+[0m[1mmodule.eu.aws_sqs_queue.dlq: Refreshing state... [id=http://sqs.eu-west-1.localhost.localstack.cloud:4566/000000000000/eu-fanout-dlq][0m
+[0m[1mmodule.eu.aws_dynamodb_table.decisions: Refreshing state... [id=eu-decisions][0m
+[0m[1mmodule.eu.aws_dynamodb_table.idempotency: Refreshing state... [id=eu-idempotency][0m
+[0m[1mmodule.eu.aws_dynamodb_table.checkpoints: Refreshing state... [id=eu-checkpoints][0m
+[0m[1mmodule.ca_alarms.aws_cloudwatch_metric_alarm.backlog_age: Refreshing state... [id=ca-backlog-age][0m
+[0m[1mmodule.ca_alarms.aws_cloudwatch_metric_alarm.dlq_not_empty: Refreshing state... [id=ca-dlq-not-empty][0m
+[0m[1mmodule.ca.aws_dynamodb_table.idempotency: Refreshing state... [id=ca-idempotency][0m
+[0m[1mmodule.ca.aws_dynamodb_table.registry: Refreshing state... [id=ca-registry][0m
+[0m[1mmodule.ca.aws_dynamodb_table.checkpoints: Refreshing state... [id=ca-checkpoints][0m
+[0m[1mmodule.ca_alarms.aws_cloudwatch_metric_alarm.worker_dead_lettered: Refreshing state... [id=ca-worker-dead-lettered][0m
+[0m[1mmodule.ca.aws_dynamodb_table.offers: Refreshing state... [id=ca-offers][0m
+[0m[1mmodule.ca.aws_sqs_queue.dlq: Refreshing state... [id=http://sqs.ca-central-1.localhost.localstack.cloud:4566/000000000000/ca-fanout-dlq][0m
+[0m[1mmodule.ca.aws_dynamodb_table.locks: Refreshing state... [id=ca-locks][0m
+[0m[1mmodule.ca.aws_dynamodb_table.decisions: Refreshing state... [id=ca-decisions][0m
+[0m[1mmodule.eu.aws_sqs_queue.work: Refreshing state... [id=http://sqs.eu-west-1.localhost.localstack.cloud:4566/000000000000/eu-fanout][0m
+[0m[1mmodule.ca.aws_sqs_queue.work: Refreshing state... [id=http://sqs.ca-central-1.localhost.localstack.cloud:4566/000000000000/ca-fanout][0m
+
+[0m[1m[32mNo changes.[0m[1m Your infrastructure matches the configuration.[0m
+
+[0mTerraform has compared your real infrastructure against your configuration
+and found no differences, so no changes are needed.
+[0m[1m[32m
+Apply complete! Resources: 0 added, 0 changed, 0 destroyed.[0m
+[0m[1m[32m
+Outputs:
+
+[0mgateway_key_id = "l8fdyd9c25"
+gateway_url = "https://8z88j3abe9.execute-api.us-east-1.amazonaws.com/v1"
+queues = {
+  "ca" = "http://sqs.ca-central-1.localhost.localstack.cloud:4566/000000000000/ca-fanout"
+  "eu" = "http://sqs.eu-west-1.localhost.localstack.cloud:4566/000000000000/eu-fanout"
+  "us" = "http://sqs.us-east-1.localhost.localstack.cloud:4566/000000000000/us-fanout"
+}
