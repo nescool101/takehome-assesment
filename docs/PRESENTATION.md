@@ -44,6 +44,51 @@ SIM_LATENCY_MS=3000 docker compose -f infra/docker-compose.yml up -d --force-rec
 #   :5173/dashboard.html        — ops view without any observability stack
 ```
 
+## Global infra pricing (verified 2026-10-27, us-east-1 list prices)
+
+### Unit prices — checked against aws.amazon.com this week
+
+| Service | Unit | Price | Note |
+|---|---|---|---|
+| DynamoDB on-demand write | WRU | **$0.625/M** | 50% cut in Nov 2024 — our old doc assumed $1.25/M (2x high) |
+| DynamoDB on-demand read | RRU | **$0.125/M** | same cut |
+| DynamoDB provisioned (rejected) | WCU / RCU | $0.00065/h / $0.00013/h | = $0.18/M writes at 100% utilization; break-even vs on-demand at 29% sustained utilization |
+| DynamoDB storage | GB-month | $0.25 | registry ~800k-2.4M rows ≈ 0.4-1.2 GB → under $0.30 |
+| SQS standard (3 requests/message) | request | **$0.40/M** | first 1M/month free; tiers $0.30/M >100B, $0.24/M >200B (we never get there) |
+| API Gateway REST (we need API keys) | request | **$3.50/M** | first 333M; HTTP APIs are $1.00/M but have no API-key/usage-plan support |
+| Fargate (Linux x86) | vCPU + GB | $0.04048/h + $0.004445/h | 1 vCPU + 2 GB = **$36.03/task-month**; Graviton (arm64) is ~20% less |
+| CloudWatch (EMF path) | metric/alarm/dashboard | $0.30 metric-mo / $0.10 alarm / $3 dashboard | EMF rides log ingestion ($0.50/GB): our flush ≈ 40 MB/month total → ~$10/mo itemized; $60 allowance kept below for headroom |
+
+### Monthly cost by load level (the 3 scale scenarios)
+
+| Monthly line | LOW (OPTIMISTIC, 4k firms / 800k eng.) | MID (6k / 1.2M) | HIGH (PESSIMISTIC, 12k / 2.4M) |
+|---|---|---|---|
+| Fargate, 2 tasks x 3 regions ($36.03) | 216 | 216 | 216 |
+| DynamoDB writes (3.46M / 5.19M / 10.4M x $0.625) | 2.2 | 3.2 | 6.5 |
+| DynamoDB reads (12.3M / 18.4M / 36.8M x $0.125) | 1.5 | 2.3 | 4.6 |
+| SQS (10.4M / 15.6M / 31.2M req x $0.40) | 4.2 | 6.2 | 12.5 |
+| API Gateway (8.8M / 13.2M / 26.4M x $3.50) | 31 | 46 | 92 |
+| LLM summaries (173 x $0.25) | 43 | 43 | 43 |
+| Observability allowance | 60 | 60 | 60 |
+| **TARGET total** | **358** | **376** | **435** |
+| vs caps ($1k / $3k / $10k) | 36% | 13% | 4% |
+| **LEAN** (1 task/region, rule-based summaries) | **207** | **225** | **285** |
+
+Even HIGH scale — double the firms, double the traffic — costs **less than half the $1k cap**: the always-on Fargate workers and the API Gateway dominate; DynamoDB and SQS together are under $25 at any scale. There are no global-tables replication charges (each region's registry is independent by design — data residency); replicating writes would double DynamoDB write costs.
+
+### The capacity-mode decision (DynamoDB), in one box
+
+> **On-demand.** Provisioned is ~3.4x cheaper per op but only at 100% utilization; break-even is 29% sustained. Our traffic is burst-drain-idle: provisioning for the peak (200 WCU x 3 regions) ≈ **$285/mo vs $4-11 on-demand** — and throttling risk on the backfill. When spend stabilizes, buy a **Database Savings Plan** (1-yr, up to 18% off on-demand), not reserved provisioned capacity (locked to provisioned mode + steady load).
+
+### Savings levers if the caps ever get tight (in order of dollars)
+
+| Lever | Saves | Cost |
+|---|---|---|
+| Graviton (arm64) Fargate tasks | ~20% of the compute line (~$43/mo) | rebuild image for arm64, no code change |
+| LEAN tier (1 task/region, rule summaries) | ~$150/mo | gives up the LLM narrative |
+| Database Savings Plan (1-yr) | up to 18% of DynamoDB | 1-year spend commit |
+| SQS/API GW tiered discounts | cents at our volume | n/a — irrelevant below 100B/mo |
+
 ## What is still open (said out loud, not hidden)
 
 | Gap | Why it's acceptable / next step |
@@ -53,7 +98,7 @@ SIM_LATENCY_MS=3000 docker compose -f infra/docker-compose.yml up -d --force-rec
 | Per-firm limiter is per-process | Correct for one worker; shared limiter (DynamoDB tokens) is the multi-worker step |
 | Real-AWS validation of alarms/gateway enforcement | LocalStack community does not enforce API keys or `PutDashboard`; alarms module takes `enable_dashboard=true` there; wire SNS to `alarm_actions` |
 | SLO thresholds are estimates | Alarm thresholds are first guesses; tune after real-AWS data |
-| ~~Cost table prices unverified~~ **Closed 2026-10-27**: DynamoDB on-demand is actually $0.625/M writes, $0.125/M reads (Nov 2024 50% cut — our table had it 2x high); SQS/API Gateway/Fargate check out. **Prod decision: DynamoDB on-demand** — provisioned only wins above 29% sustained utilization; peak-provisioning our bursty drain ≈ $285/mo vs $4-11. Later lever: Database Savings Plan (1-yr, up to 18% off on-demand), not reserved provisioned capacity. | Verified against aws.amazon.com list prices; totals now $358/$376/$435 (were $362/$382/$446) |
+| ~~Cost table prices unverified~~ **Closed 2026-10-27**: all infra unit prices verified against aws.amazon.com (full table above); DynamoDB on-demand is actually $0.625/M writes, $0.125/M reads (Nov 2024 50% cut — our table had it 2x high). **Prod decision: DynamoDB on-demand** — provisioned only wins above 29% sustained utilization; peak-provisioning our bursty drain ≈ $285/mo vs $4-11. Later lever: Database Savings Plan (1-yr, up to 18% off on-demand), not reserved provisioned capacity. | Totals by load level: $358 / $376 / $435 (LOW / MID / HIGH) |
 | `results/integration/` reports from 2026-10-26 | Refreshed 2026-10-27 (8/8 LocalStack); `mvn verify` re-runs them any time |
 
 Evidence for every layer: [results/](../results/) — unit 30/30, Bruno 18/18, Playwright 3/3, Locust 6/6 (2026-10-27).
