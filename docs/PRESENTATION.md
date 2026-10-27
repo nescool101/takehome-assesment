@@ -89,13 +89,28 @@ Even HIGH scale — double the firms, double the traffic — costs **less than h
 | Database Savings Plan (1-yr) | up to 18% of DynamoDB | 1-year spend commit |
 | SQS/API GW tiered discounts | cents at our volume | n/a — irrelevant below 100B/mo |
 
+## The six gaps we name ourselves — and what we did about them
+
+Context: the whole take-home (design doc + worker + tests + infra + load + evidence) was produced in a **4-hour working window**. These six are the things a staff engineer would do next; two are done today, four have written plans. We name them ourselves — the list is the deliverable.
+
+| # | Gap | Status | What we did / the plan |
+|---|---|---|---|
+| 1 | **Backfill not de-risked** (our own #1 risk: `checkpoints` table unused, confirm-on-touch unproven) | **Planned** (design + script exist; prototype is the next work item) | Prototype (1 day): a `backfill` CLI that lists engagement IDs, walks them through the same `publish` path in checkpointed batches (`checkpoints` row per package: `pending/confirmed`), and a drift probe that touches 1% of engagements daily and compares registry vs source. Acceptance: a killed mid-backfill run resumes exactly where it stopped; confirm-on-touch repairs a wiped registry row. |
+| 2 | **Multi-instance worker story** (firm limiter + counters are per process) | **Planned** | Two options written down: (a) shared firm limiter in DynamoDB (token-bucket row per firm, `ADD` update — same primitives the shared breaker already uses), or (b) explicit one-worker-per-region, scale = regions, and document it as a capacity model. Decide with real-AWS throughput data; the breaker pattern is the template either way. |
+| 3 | **User-visible SLO not measured** (we measured status-read latency, not publish→badge) | **Done today** ✅ | New `locust/badge_slo.py` probe, run recorded in `results/locust/badge-slo.json`: **solo publish→badge p50 0.38 s / p95 0.39 s / max 0.42 s** (requirement: "within seconds" — met with margin); **batch of 200: p50 7.6 s / p95 9.4 s**, 0 missing badges. Next: add it to the nightly load run and alarm on it (p95 > 30 s). |
+| 4 | **No runbook** (alarms existed, on-call actions didn't) | **Done today** ✅ | `docs/RUNBOOK.md`: every alarm → diagnosis → action (incl. "never delete DLQ messages", redrive is safe because idempotency holds), plus the known limits an on-call must know before acting. |
+| 5 | **No fault injection beyond unit level** | **Planned** | Integration-level chaos (half a day on the existing LocalStack harness): kill SQS mid-drain (assert: redelivery, 0 duplicates), DynamoDB throttling mid-drain (assert: breaker opens and half-opens on schedule), kill -9 the worker mid-batch (assert: lease expiry retakes claims — already proven in one integration test, extend to batch). |
+| 6 | **No threat model** | **Planned** (partial controls live: gateway API key + usage plan, fail-closed admin token, id validation) | One page: worst attack = unauthenticated publish floods downstream permits (answered by gateway key + quota); admin actions need a real authorizer (the gateway key does not cover :8080); data-at-rest is DynamoDB-encrypted by default; open question for security review: per-key publish rate limits per firm. |
+
+The meeting line: *"In 4 hours we chose evidence over breadth: the core is built and measured, the risky edges are named with plans, and the two cheapest credibility gaps (SLO measurement, runbook) we closed the same day."*
+
 ## What is still open (said out loud, not hidden)
 
 | Gap | Why it's acceptable / next step |
 |---|---|
 | Summary generation (brief section 4) is design-only | Costed and designed in the design doc; the fan-out core was the build target |
-| `checkpoints` table is design-only — backfill has no checkpointing | Worker has none; registry hooks + confirm-on-touch carry correctness |
-| Per-firm limiter is per-process | Correct for one worker; shared limiter (DynamoDB tokens) is the multi-worker step |
+| `checkpoints` table is design-only — backfill has no checkpointing | Prototype plan written (six-gaps table above, #1) |
+| Per-firm limiter is per-process | Two options written down (six-gaps table, #2); one-worker-per-region is the current capacity model |
 | Real-AWS validation of alarms/gateway enforcement | LocalStack community does not enforce API keys or `PutDashboard`; alarms module takes `enable_dashboard=true` there; wire SNS to `alarm_actions` |
 | SLO thresholds are estimates | Alarm thresholds are first guesses; tune after real-AWS data |
 | ~~Cost table prices unverified~~ **Closed 2026-10-27**: all infra unit prices verified against aws.amazon.com (full table above); DynamoDB on-demand is actually $0.625/M writes, $0.125/M reads (Nov 2024 50% cut — our table had it 2x high). **Prod decision: DynamoDB on-demand** — provisioned only wins above 29% sustained utilization; peak-provisioning our bursty drain ≈ $285/mo vs $4-11. Later lever: Database Savings Plan (1-yr, up to 18% off on-demand), not reserved provisioned capacity. | Totals by load level: $358 / $376 / $435 (LOW / MID / HIGH) |
