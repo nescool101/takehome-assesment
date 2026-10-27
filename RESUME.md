@@ -16,7 +16,7 @@ Branch `presentation` (observability + polish for the 2026-10-27 presentation, o
 - Push: HTTPS remote has no credentials; push over SSH (`git push git@github.com:nescool101/takehome-assesment.git <branch>`) or `gh auth login`.
 - ecc plugin is enabled at project scope (`.claude/settings.json`, minimal hooks); restart Claude Code to load it, then run its review commands.
 - API Gateway key/throttle not enforced by LocalStack; verify on AWS.
-- Prices in the cost table are from memory, unverified.
+- DynamoDB prices verified 2026-10-27 against aws.amazon.com ($0.625/M writes, $0.125/M reads on-demand — the doc had assumed 2x); capacity-mode decision: on-demand (provisioned breaks even only above 29% sustained utilization, peak-provisioning would cost ~$285/mo vs $4-11). SQS/API Gateway/Fargate prices check out.
 - Hook `protect-env` blocks any command containing ".env"; use the Edit/Write tools for `.env.example`.
 
 ## How to run

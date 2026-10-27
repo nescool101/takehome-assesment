@@ -53,7 +53,7 @@ SIM_LATENCY_MS=3000 docker compose -f infra/docker-compose.yml up -d --force-rec
 | Per-firm limiter is per-process | Correct for one worker; shared limiter (DynamoDB tokens) is the multi-worker step |
 | Real-AWS validation of alarms/gateway enforcement | LocalStack community does not enforce API keys or `PutDashboard`; alarms module takes `enable_dashboard=true` there; wire SNS to `alarm_actions` |
 | SLO thresholds are estimates | Alarm thresholds are first guesses; tune after real-AWS data |
-| Cost table prices unverified | Recompute before quoting numbers |
+| ~~Cost table prices unverified~~ **Closed 2026-10-27**: DynamoDB on-demand is actually $0.625/M writes, $0.125/M reads (Nov 2024 50% cut — our table had it 2x high); SQS/API Gateway/Fargate check out. **Prod decision: DynamoDB on-demand** — provisioned only wins above 29% sustained utilization; peak-provisioning our bursty drain ≈ $285/mo vs $4-11. Later lever: Database Savings Plan (1-yr, up to 18% off on-demand), not reserved provisioned capacity. | Verified against aws.amazon.com list prices; totals now $358/$376/$435 (were $362/$382/$446) |
 | `results/integration/` reports from 2026-10-26 | Refreshed 2026-10-27 (8/8 LocalStack); `mvn verify` re-runs them any time |
 
 Evidence for every layer: [results/](../results/) — unit 30/30, Bruno 18/18, Playwright 3/3, Locust 6/6 (2026-10-27).

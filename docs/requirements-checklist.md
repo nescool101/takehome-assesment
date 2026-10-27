@@ -8,7 +8,7 @@ Source: the assignment PDF (`LLMHistory/Staff_Java_Developer_-_Take-Home_Test 2 
 | Short document, 2-4 pages | `docs/design-doc.md`, `docs/design-doc.pdf` | Done (4 pages) | `docs/design-doc.pdf` |
 | 1. Architecture and data ownership | Section 1 | Done | `docs/diagrams/out/architecture.svg`, `publish-sequence.svg`, `er.svg` |
 | 2. Correctness and production evolution: branching versions, withdrawals, v5 declined then v7, accumulating updates, what "declined" pins | Section 2 | Done | `docs/diagrams/out/version-dag.svg`, `status-state.svg` |
-| 3. Scale, cost, operations with arithmetic against the given numbers | Section 3 (3 scale x 3 budget scenarios) | Done, prices unverified | `docs/design-doc.md` section 3; `backend/src/main/java/com/caseware/fanout/config/` reproduces the backfill arithmetic, tested in `AppConfigTest` |
+| 3. Scale, cost, operations with arithmetic against the given numbers | Section 3 (3 scale x 3 budget scenarios) | Done, DynamoDB prices verified 2026-10-27 (on-demand chosen: 29% utilization break-even) | `docs/design-doc.md` section 3; `backend/src/main/java/com/caseware/fanout/config/` reproduces the backfill arithmetic, tested in `AppConfigTest` |
 | 4. Summary generation and evaluation, defensible in November | Section 4 | Designed | `docs/design-doc.md` section 4 |
 | 5. Tradeoffs, assumptions, the one requirement we challenge | Section 5 | Done | `docs/design-doc.md` section 5 |
 | Migration and backfill | Sections 2, 3 | Done | backfill days in section 3 |
