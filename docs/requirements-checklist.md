@@ -13,7 +13,7 @@ Source: the assignment PDF (`LLMHistory/Staff_Java_Developer_-_Take-Home_Test 2 
 | 5. Tradeoffs, assumptions, the one requirement we challenge | Section 5 | Done | `docs/design-doc.md` section 5 |
 | Migration and backfill | Sections 2, 3 | Done | backfill days in section 3 |
 | Unreliable event delivery | Section 2 | Designed; the worker half is built (idempotency, retry, DLQ) | `results/integration/` |
-| Observability and SLOs | Section 3 | Designed | `docs/design-doc.md` section 3 |
+| Observability and SLOs | Section 3 | Done (live dashboards, traces, alarms as code; SLO thresholds still estimates) | `results/observability/REPORT.md`, `infra/terraform/modules/alarms` |
 | Data residency (EU, Canada) | Section 1; per-region Terraform stacks | Done | `infra/terraform/modules/queue_registry`, `results/terraform/` |
 | Failure recovery | Section 2 | Done for the worker; rest designed | `results/unit/`, `results/integration/` |
 | Riskiest part, and what we left out | Section 5 | Done | `docs/design-doc.md` section 5 |
