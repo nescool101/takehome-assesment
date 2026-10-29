@@ -1,0 +1,187 @@
+CASEWARE TAKE-HOME EXERCISE - CHAT HISTORY
+Date: 2026-10-23
+==========================================================================
+
+--------------------------------------------------------------------------
+USER
+--------------------------------------------------------------------------
+[Attached: "Take-Home Architecture Design Exercise" PDF - Caseware]
+
+Summary of the exercise:
+- Engagement Files are created from Product Templates; templates get updates
+  (~1/week/product). Users must see which engagements have pending updates
+  and a human-readable summary to apply/decline.
+- Scale: ~4,000 firms, ~800,000 active engagements, 40 products.
+  Median firm ~40 engagements, largest ~40,000. Budget < $X/month incl. inference.
+- Product wants real time (seconds after publish).
+- Versions branch, can be withdrawn; a firm that declined v5 may be offered v7.
+- Template DB is shared; engagement DBs are per-firm, some in-region (EU, Canada).
+- Reading an engagement's template info requires loading it (~1 min/file, hard
+  constraint). The same engagement system handles creation and accept/decline.
+- Systems are live, no maintenance window, must work for existing engagements.
+- Part 1: 2-4 page design doc (architecture, correctness/evolution, scale/cost
+  with arithmetic, summary generation/evaluation, tradeoffs, riskiest part,
+  what was left out).
+- Part 2: Java implementation of the template-publish fan-out worker
+  (concurrency, failure, idempotency, downstream capacity) + short README.
+- ~4 hours total. "Please do not over-optimize."
+
+Questions asked:
+1. What is the better approach: plain Java app / not Spring / reactive?
+2. Move to Kotlin? Faster? Or does the scope require Java only?
+3. Go to Java 21 to be sure?
+4. What is cheaper: Java microservices or AWS Lambdas? Is it better to run
+   microservices with scaling policies? We also have to build the infra: use
+   LocalStack to mock AWS, Terraform (or similar) for remote infra, and for
+   local also LocalStack + Terraform?
+5. Testing: local run with a Terraform template creating the components, plus
+   unit tests, integration tests, Bruno tests consuming the endpoints, load
+   testing simulating the long downstream call and extrapolating statistics to
+   real consumption. They don't mention these extra tests. Also add a frontend
+   so we can run everything end-to-end (backend + frontend + architecture).
+6. Open questions:
+   O1. Number of firms - needed for registry volume and backfill math.
+   O2. The $X budget - or state an assumed figure and defend against it.
+   O3. Backfill mechanism - the riskiest assumption: can the firm DBs
+       enumerate engagements?
+   Proposal: 3 scenarios (optimistic, pessimistic, balanced), tested in
+   integration tests.
+
+--------------------------------------------------------------------------
+CLAUDE
+--------------------------------------------------------------------------
+
+1) PLAIN JAVA vs SPRING vs REACTIVE
+Use Java 21 virtual threads, not reactive.
+- The bottleneck is the downstream team's capacity (~1 min/call), not threads.
+  Each in-flight call is just a waiting thread; virtual threads make thousands
+  of blocked waits essentially free, with simple, debuggable, sequential code.
+- Reactive (WebFlux/Reactor) adds complexity (backpressure operators, harder
+  stack traces, harder to explain in review) and buys nothing here, because
+  you must cap concurrency at the downstream limit anyway.
+- Framework: for Part 2 ("interfaces, contracts and correctness, not a full
+  app"), plain Java 21 + a few small libraries (AWS SDK, Jackson, JUnit 5,
+  Testcontainers) keeps the code focused on the concurrency/idempotency logic.
+  Spring Boot is acceptable if you want a runnable service, but keep the core
+  worker framework-free so it is unit-testable without a context.
+- Key mechanics to show: a Semaphore (or token bucket) sized to the
+  downstream's concurrency quota, idempotency key = (engagementId,
+  templateId, targetVersion), SQS visibility timeout > call time + margin,
+  bounded retries with backoff + jitter, DLQ, circuit breaker on 429/5xx.
+
+2) KOTLIN?
+No. The brief says "Implement one narrow component in Java". Kotlin is not
+faster at runtime (same JVM); coroutines would solve the same problem virtual
+threads already solve. Switching languages signals not reading the brief.
+
+3) JAVA 21?
+Yes. Java 21 is LTS and virtual threads (JEP 444) are final. Records, sealed
+interfaces and pattern matching help model events/outcomes cleanly
+(e.g. sealed interface Outcome permits Applied, Skipped, Retryable, Fatal).
+Avoid preview features (structured concurrency is still preview in 21).
+
+4) COST: LAMBDA vs CONTAINERS
+Lambda bills wall-clock time, including time spent waiting on the 1-minute
+downstream call -> you pay for idle waiting.
+
+Assumed fan-out volume (if every affected engagement needed a downstream call):
+  800,000 engagements / 40 products = ~20,000 per product
+  ~1 publish/week/product -> ~40 publishes/week -> ~173/month
+  ~20,000 x 173 = ~3.5M calls/month
+
+  Lambda (512 MB, 60 s): 30 GB-s x $0.0000166667 = ~$0.0005/call
+    -> ~$1,750/month compute (+ requests)
+  ECS Fargate + virtual threads: concurrency is capped by downstream anyway
+    (say 100 in flight); 1-2 small tasks (0.5 vCPU/1 GB) = ~$20-40/month
+
+Recommendation: ECS Fargate worker consuming SQS, autoscaling on
+ApproximateAgeOfOldestMessage / queue depth, min 1 task. Note autoscaling
+cannot exceed the downstream quota, so the global concurrency limit must be
+shared across tasks (e.g. DynamoDB-backed lease/token counter), not
+per-instance. Lambda is fine for lightweight, short event handlers
+(e.g. reacting to the publish hook and enqueueing work).
+
+BIGGER DESIGN POINT (worth stating in the doc): the best fan-out avoids the
+1-minute load almost entirely. Maintain an engagement registry
+(engagementId, firmId, region, product, pinnedVersion, declinedUpTo) fed by
+hooks on create/apply/decline. On publish, "which engagements are affected"
+becomes a registry query (seconds), and the pending indicator is a registry
+write. The 1-minute load is only needed for backfill of existing engagements.
+Summaries are generated per (product, fromVersion, toVersion) pair, not per
+engagement -> a few hundred LLM calls/month, inference cost negligible.
+
+INFRA
+- Terraform for both remote and local. Same modules, different tfvars.
+- Local: LocalStack + tflocal (terraform-local wrapper) or provider endpoint
+  overrides pointing to http://localhost:4566.
+- Tests: Testcontainers LocalStack module (SQS, DynamoDB, S3) so integration
+  tests create their own infra and don't depend on a running stack.
+
+5) TESTING / FRONTEND - be careful with the 4-hour budget
+The brief says ~4 hours and "please do not over-optimize". A full pyramid +
+frontend + load suite is several days of work and can read as poor scoping.
+Suggested split:
+
+BUILD (in scope):
+- Unit tests (JUnit 5): fake downstream with configurable latency/failure;
+  assert concurrency never exceeds the cap, duplicates are skipped
+  (idempotency), retries/backoff and DLQ behavior, withdrawn versions are
+  skipped.
+- One integration test: Testcontainers + LocalStack SQS/DynamoDB, end-to-end
+  publish -> queue -> worker -> registry updated.
+- Simulated-time load test: stub downstream with a time-compression factor
+  (1 min -> 1 s, i.e. 60x). Run N engagements, measure throughput and
+  completion time, then extrapolate: real_time = measured_time x 60.
+  Can be a JUnit test or a small Gatling/k6 script with WireMock delays.
+
+DESCRIBE IN README (not build):
+- Bruno collections for the API (if endpoints exist), Playwright E2E,
+  a minimal frontend showing the "pending update" badge + summary,
+  full Gatling load profile. Present as "what I deliberately left out and
+  how I'd validate it in production" - this is exactly what they ask for.
+
+If you still want a frontend, keep it a single static page polling one
+endpoint; don't let it eat the design-doc time, which is the primary focus.
+
+6) OPEN QUESTIONS
+O1. Number of firms: already given in the brief - ~4,000 firms
+    (median ~40 engagements, largest ~40,000). Remove as an open question;
+    use it in the math (skew matters for per-firm queues/fairness: one large
+    firm must not starve 3,999 small ones during backfill).
+
+O2. $X budget: state an assumed figure and show headroom, e.g.
+    Pessimistic $1,000 / Balanced $3,000 / Optimistic $10,000 per month.
+    Show the design's estimated cost (Fargate + SQS + DynamoDB + small LLM
+    spend, likely low hundreds/month) fits even the pessimistic figure.
+
+O3. Backfill (riskiest assumption). Backfill math:
+    800,000 engagements x 1 min = 800,000 min = ~13,333 hours of load time.
+    Duration depends on downstream concurrency we're allowed:
+
+    Scenario      Assumption                               Duration
+    -----------   --------------------------------------   ------------------
+    Optimistic    Template id/version readable from firm   minutes-hours
+                  DB metadata without rehydration          (no loads)
+    Balanced      100 concurrent loads, 24/7               ~5.6 days
+    Pessimistic   20 concurrent loads, off-hours 12h/day   ~55 days
+
+    Also note: "version used for creation" may differ from current version if
+    updates were applied before the registry existed -> confirms load is
+    needed unless the engagement system records applied updates.
+    Mitigation: lazy backfill - register an engagement whenever it is opened
+    (it's already loaded, zero extra cost), plus prioritized background
+    backfill (recently active engagements first, per-firm fair queuing).
+
+    Testing the scenarios: yes, parameterize the integration/load test with
+    the downstream stub's concurrency, latency and failure rate per scenario
+    (JUnit 5 @ParameterizedTest or @MethodSource). Assert invariants (no
+    duplicate work, cap respected, all engagements eventually registered)
+    and report projected real-world duration.
+
+SUMMARY OF DECISIONS
+- Java 21, virtual threads, plain Java core (Spring optional wrapper).
+- No Kotlin, no reactive.
+- ECS Fargate + SQS + DynamoDB; Lambda only for thin event triggers.
+- Terraform everywhere; LocalStack + tflocal locally; Testcontainers in tests.
+- Unit + 1 integration + simulated-time load test; rest documented as roadmap.
+- Three scenarios for budget and backfill, encoded as parameterized tests.

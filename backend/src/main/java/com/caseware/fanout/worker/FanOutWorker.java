@@ -8,6 +8,7 @@ import java.util.concurrent.Executors;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BooleanSupplier;
 
@@ -29,6 +30,8 @@ public final class FanOutWorker {
     private final Semaphore slots;
     private final int permits;
     private final Map<String, LongAdder> counts = new ConcurrentHashMap<>();
+    private final Map<String, Long> flushed = new ConcurrentHashMap<>(); // counter values already emitted by flushMetrics
+    private final AtomicInteger busy = new AtomicInteger(); // tasks inside process() right now
 
     public FanOutWorker(JobSource source, DownstreamClient downstream, IdempotencyStore idem, OfferCatalog catalog,
                         FirmLimiter firms, CircuitBreaker breaker, Backoff backoff,
@@ -83,22 +86,41 @@ public final class FanOutWorker {
         } // close() waits for in-flight work
     }
 
-    /** Emit and reset the outcome counters since the last flush, plus current in-flight, as one EMF line. */
+    /** Emit the outcome counters since the last flush (deltas over the cumulative {@link #counts}), plus in-flight, as one EMF line. */
     public void flushMetrics() {
         var m = new java.util.LinkedHashMap<String, Long>();
         for (String k : List.of("Done", "Skipped", "Deferred", "Retried", "DeadLettered")) {
-            var a = counts.get(k);
-            m.put(k, a == null ? 0L : a.sumThenReset());
+            long total = count(k);
+            m.put(k, total - flushed.getOrDefault(k, 0L));
+            flushed.put(k, total);
         }
         m.put("InFlight", (long) (permits - slots.availablePermits()));
         Log.emf(m);
     }
 
+    /** Cumulative counters (never reset, safe to read concurrently with flushMetrics) + jobs in process(), for the ops API scrape endpoints. */
+    public Map<String, Long> snapshotMetrics() {
+        var m = new java.util.LinkedHashMap<String, Long>();
+        for (String k : List.of("Done", "Skipped", "Deferred", "Retried", "DeadLettered")) m.put(k, count(k));
+        m.put("InFlight", (long) busy.get()); // the slots gauge would show the poll batch reserve, not work
+        return m;
+    }
+
+    private long count(String k) {
+        var a = counts.get(k);
+        return a == null ? 0L : a.sum();
+    }
+
     public Outcome process(Received r) {
-        Outcome o = handle(r);
-        counts.computeIfAbsent(o.getClass().getSimpleName(), k -> new LongAdder()).increment();
-        if (o instanceof DeadLettered d) Log.event("warn", "dead_lettered", "job", r.job().key(), "reason", d.reason());
-        return o;
+        busy.incrementAndGet();
+        try {
+            Outcome o = handle(r);
+            counts.computeIfAbsent(o.getClass().getSimpleName(), k -> new LongAdder()).increment();
+            if (o instanceof DeadLettered d) Log.event("warn", "dead_lettered", "job", r.job().key(), "reason", d.reason());
+            return o;
+        } finally {
+            busy.decrementAndGet();
+        }
     }
 
     private Outcome handle(Received r) {

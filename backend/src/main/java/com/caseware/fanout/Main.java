@@ -47,7 +47,7 @@ public final class Main {
                 permits, cfg.retryMaxAttempts(), Duration.ofMillis(cfg.deferDelayMs()));
 
         new OpsApi(Integer.parseInt(env("PORT", "8080")), source, idem, catalog, decisions, registry, sqs, q, dlq,
-                downstream::statsJson, configJson(cfg)).start();
+                downstream::statsJson, configJson(cfg), worker::snapshotMetrics).start();
         Log.event("info", "started", "permits", permits, "simLatencyMs", cfg.simLatencyMs());
         // SIGTERM (ECS deploy): stop polling, let in-flight loads finish and ack, then exit
         var stop = new AtomicBoolean();
@@ -64,7 +64,8 @@ public final class Main {
             t.setDaemon(true);
             return t;
         });
-        metrics.scheduleAtFixedRate(worker::flushMetrics, 60, 60, java.util.concurrent.TimeUnit.SECONDS);
+        long flush = Long.parseLong(env("METRICS_FLUSH_SECONDS", "60"));
+        metrics.scheduleAtFixedRate(worker::flushMetrics, flush, flush, java.util.concurrent.TimeUnit.SECONDS);
         worker.run(stop::get, 10, Duration.ofMillis(100));
         metrics.shutdown();
         worker.flushMetrics();

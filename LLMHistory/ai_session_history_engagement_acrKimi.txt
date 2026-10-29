@@ -1,0 +1,241 @@
+AI SESSION HISTORY — Engagement Files ACR Take-Home Exercise
+==============================================================
+Session date: 2026-10-23 (~11:05 onwards, UTC-05:00)
+Tool: Kimi Chat (Moonshot AI)
+Purpose: Architecture planning session for the Engagement Files / Template Update
+feature take-home assignment (Part 1 design doc + Part 2 Java fan-out worker).
+NOTE: This transcript is the optional "AI Usage / Session History" deliverable.
+==============================================================
+
+--- USER (message 1, 2026-10-23 11:05) ---
+[Pasted the full assignment brief from
+"engagement files acr.txt" — system design exercise: pending-update indicator
+across ~40 products, median firm ~40 engagements, largest ~40,000, ~1 min
+engagement load hard constraint, budget $X/month, real-time indicator,
+non-linear template versioning, in-region residency (EU/Canada), Part 1
+design doc + Part 2 Java template-publish fan-out worker, 4-hour timebox.]
+
+--- ASSISTANT (message 1) ---
+Clarified scope before building. Flagged missing parameters: "$X" budget never
+specified; firm count missing (needed for fan-out math); JSON diff tooling
+ownership. Offered three paths (full package, one part, critique). Practical
+note: assignment explicitly evaluates AI usage and the candidate's own
+judgment in a live review — output should be treated as a draft to
+pressure-test and rewrite in the user's own voice, especially the riskiest
+parts (what "declined" pins, summary audit-defensibility, the 1-minute-load
+fan-out).
+
+--- USER (message 2) ---
+"on plan mode lests design toghetert the arquitecture before coding"
+
+--- ASSISTANT (message 2) — Core architectural proposal ---
+Presented the core architectural move: build a cheap, queryable side-index
+(Engagement Registry: engagementId -> firmId, templateId, pinnedVersion,
+declinedChangeIds, residencyZone); derive pending-update state from the version
+DAG + declined change set; never load an engagement except at accept/apply time
+(1 min x 40,000 = 28 days single-threaded at the largest firm — scanning by
+loading is impossible).
+
+Cost insight anchoring the doc: invert the naive design. Summaries are generated
+ONCE PER PUBLISHED VERSION (~40 publishes/week — trivial inference spend);
+the per-engagement fan-out only writes cheap pointer records (DB writes,
+milliseconds); the 1-minute load is only needed at backfill and at
+accept/decline time. This is also what makes "real time within seconds"
+achievable.
+
+Key data structures: version DAG + per-engagement declinedChangeIds, so:
+- v7 containing v5's changes: v5-declined portion silently filtered; user sees
+  only net-new changes. No re-asking.
+- Multiple accumulating updates: pending state is DERIVED
+  (baseVersion + latest published non-withdrawn descendant - declined changes),
+  not stored per version. Withdrawals = lineage recompute (tombstone offer,
+  restore previous pending state).
+- At decision time, snapshot exactly what summary the user saw (version pair +
+  summary artifact hash) into the decision record = March -> November
+  regulatory defense.
+
+Five open decisions posed to the user:
+1. Where does the UI read the indicator from? Option A: read Projection store
+   directly (engagement system only at accept/decline; seconds-to-indicator
+   easy). Option B: materialize inside engagement system (then the 40k x 1-min
+   fan-out makes "seconds" impossible — needs ~200 workers just to hit ~3 hours).
+   Assistant's instinct: A, with B fallback argument ready.
+2. Decline pins change-units (recommended), not versions.
+3. Summaries: deterministic templated canonical artifact, immutable + provenance
+   (template versions, diff hash, renderer version, timestamp); LLM polish as
+   optional display-layer sugar only. Cost is nearly irrelevant at 40/week;
+   the issue is audit defensibility + hallucinated change descriptions against
+   confidential financial content.
+4. Residency: global template catalog (non-confidential, shared); per-region
+   (EU/Canada) registry + projections for engagement metadata.
+5. Requirement to challenge: "real time — within seconds" — recast as
+   "seconds for catalog propagation; indicator read is O(1) fresh or lazily
+   derived; engagement-side materialization is best-effort background."
+
+Still missing: firm count and $X value (assistant offered assumed values:
+~500 firms, $2k/month).
+
+--- USER (message 3) ---
+Asked stack questions: "what should be beteer approach balancing between
+loading to java app / using not spring or using a reactive approach? moving
+java to kotlin approach? to faster? or the scope asking for java only going to
+java21 to me sure? also what is cheaper java micro or aws lamdas/ is i sea
+charging the price microservices with escalation poolices is better/ also we
+have to build the infra/ use localStack for mock the aws arq, use terraform or
+the terraform similitude for creating the infra remote/ but for local also
+using localStack terrafforming?"
+
+--- ASSISTANT (message 3) — Stack decisions ---
+1. Java only — spec says "Implement one narrow component in Java." Kotlin
+   coroutines would be nice but signals spec-noncompliance. Java 21 gives ~90%
+   of the coroutine benefit anyway.
+2. Java 21 + virtual threads, plain blocking code. Reactive (WebFlux/Vert.x)
+   is the wrong tool: bottleneck is downstream capacity, not the event loop;
+   reactive adds complexity and obscures the backpressure decision the
+   reviewers want to see. Pattern: virtual-thread executor + explicit
+   Semaphore sized to downstream budget. Do NOT hold all 40k engagements in
+   memory — stream/shard + checkpoint.
+3. Lambda vs microservice arithmetic: both nearly free at this scale
+   (slow path ~50–200 downstream-hours/month; Lambda 1GB ~ $6/mo; Fargate
+   0.25vCPU/0.5GB always-on ~ $10–12/mo). Cost doesn't decide; operability
+   does. Pick ECS Fargate + SQS over Lambda because: (a) one global semaphore/
+   token bucket = trivially correct global downstream protection vs per-function
+   reserved concurrency; (b) checkpointing/resumability for 40k-job fan-outs
+   is natural in a persistent worker; (c) the assignment asks to demonstrate
+   concurrency/failure/idempotency/capacity handling in code you control.
+   README should document the Lambda+SQS alternative (reserved concurrency =
+   capacity) and why it was rejected — that tradeoff paragraph is graded.
+4. LocalStack + Terraform: yes, but ~30 minutes max of the 4 hours.
+   docker-compose LocalStack limited to SQS + DynamoDB. One Terraform module
+   set with provider override for local (endpoints -> localhost:4566, mock
+   creds), envs/local + envs/aws roots, no duplication; OpenTofu fine, don't
+   bikeshed. Prefer Testcontainers over hand-rolled LocalStack scripts.
+   Explicitly NOT building: EKS, service mesh, Kafka, Step Functions
+   choreography, multi-region active-active — each gets a
+   "considered, rejected, why" paragraph.
+Suggested sequence: lock design decisions 1&2 -> design doc skeleton -> Part 2
+code -> minimal infra -> diagrams/polish.
+
+--- USER (message 4) ---
+"for acomplish the project scope? what are the deliverables? and how we can make
+it. dont code / we are just taking desitions from thea rquitecture first"
+
+--- ASSISTANT (message 4) — Deliverables + decision log + 4-hour plan ---
+Deliverables checklist: (1) design doc 2–4 pages (5 required sections +
+backfill/unreliable events/observability+SLOs/residency/failure recovery +
+riskiest part + left-out items); (2) Part 2 Java fan-out worker + README;
+(3) diagrams; (4) optional AI session history (this file).
+
+Decision log — SETTLED:
+D1 side-index never scan-by-loading; D2 read path reads Projection store
+directly (Option A), engagement system only at accept/decline; D3 decline pins
+change-units; D4 deterministic immutable provenance-stamped summaries, LLM
+polish display-only; D5 global catalog + per-region registry/projections;
+D6 Java 21 + virtual threads + semaphore; D7 ECS Fargate + SQS (Lambda
+documented+rejected); D8 minimal TF + LocalStack + Testcontainers.
+
+OPEN: O1 firm count; O2 $X budget (assistant proposed assuming 500 firms /
+$2k/mo); O3 backfill mechanism — can firm DBs enumerate engagement metadata
+without the 1-min load? (riskiest assumption; if not: 40k-minute crawl at
+biggest firm); O4 challenge "real time, within seconds" wording; O5 riskiest
+part = decline/change-unit semantics across withdrawals or O3 backfill.
+
+4-hour build order: 0:00–0:20 close O1–O5; 0:20–1:20 draft design doc section
+by section (arithmetic section gets reviewer attention); 1:20–2:50 Part 2 code
+(interfaces first: JobSource, DownstreamClient, CheckpointStore,
+IdempotencyKey scheme; then semaphore-bounded worker; then Testcontainers test);
+2:50–3:20 minimal infra (TF module, local/AWS roots, compose LocalStack);
+3:20–4:00 diagrams (mermaid), polish, AI-usage notes. Guard: steps 4–5 must
+not eat step 3 — Java component + doc are 90% of the grade.
+
+--- USER (message 5) ---
+Proposed expanding test strategy beyond spec: terraform+localstack creating
+components, unit tests, integration tests, Bruno tests consuming endpoints,
+load testing simulating the long call, statistics matched to real consumption;
+also adding a frontend blocker for full-stack verification. Noted the spec
+doesn't mention these extra tests. For O1/O2/O3: suggested optimistic /
+pessimistic / balanced scenarios tested in integration tests.
+
+--- ASSISTANT (message 5) — Test pyramid + scenario table ---
+Scope guardrail: spec grades architecture judgment + Java component + AI
+maturity + clarity, 4-hour box, "do not over-optimize." Tiered:
+- T0 (must build, graded): unit tests for semaphore bounds/idempotency/
+  retry-DLQ + one Testcontainers integration test on LocalStack SQS+DynamoDB
+  (happy path + poison-message path).
+- T1 (nice, ~30 min): Bruno collection against a small worker management API
+  (enqueue publish job, shard status, replay DLQ) — Bruno fits because Part 2
+  is a worker, not an API service; don't invent endpoints just to have them.
+- T2 (deliberately skip, document in README): frontend, full compose E2E with
+  UI, failover drills. "Out of scope + how I'd validate post-MVP" is worth more
+  points than a rushed React app.
+
+Correction on "30-minute call": the hard constraint is ~1 MINUTE per
+engagement load. Stub latency must be configurable; tests run at 10–100 ms.
+For load statistics don't burn real time — use Little's Law:
+throughput = min(semaphore permits, downstream capacity); wall-clock ≈
+jobs x latency / permits. E.g., latency 100 ms, 4,000 jobs (= 40k x 1 min ÷ 10
+speedup), 50 permits → ~8 s expected, assert stub never saw >50 concurrent
+calls. Proves 40k x 1-min scaling without 667 hours.
+
+Three-scenario parameter table (shared by integration tests and doc arithmetic):
+Optimistic: 100 firms, ~40 eng/firm, 4k total, 10% behind, 200 permits,
+~400 slow calls -> ~2 min/publish.
+Balanced: 500 firms, ~200 avg (skewed), ~100k total, 25% behind, 50 permits,
+~5k calls -> ~100 min/publish.
+Pessimistic: 5,000 firms, ~200 avg, ~1M total, 50% behind, 20 permits,
+~20k calls -> ~17 h/publish.
+The last row is the honest answer to "real time": indicator instant (projection
+read), engagement-side materialization up to ~17 h at 20 permits — which is why
+D2 (read path bypasses engagement system) exists. Scenario table IS the argument.
+
+O2 budget: assume $2k/month, defend: Fargate ~$50, SQS+DynamoDB ~$100,
+CloudWatch ~$50, inference ~$5 (summaries per version, deduped, ~160/month).
+Total ~$205/month = 10% of budget.
+
+O3 backfill: two rows in the table — cheap enumeration API: 1M records ÷
+500/s ≈ 35 min; only 1-min loads: 1M min ÷ 200 workers ≈ 3.5 days one-time.
+Recommend stating the enumeration API as a REQUIREMENT on the engagement team
+(spec allows assuming hooks/events); flag as assumption most likely wrong =
+the "riskiest part" answer.
+
+Confirm: T0/T1/T2 tiering (skip frontend?); scenario numbers (bless balanced
+500 firms/100k engagements?); configurable stub + Little's Law. Then design doc
+skeleton, section 1 first.
+
+--- USER (message 6, 2026-10-23 11:25) ---
+"create a txt file with this chat history"
+
+--- ASSISTANT (message 6) ---
+Generated this transcript file.
+
+==============================================================
+SUMMARY FOR THE "AI USAGE" REVIEW QUESTIONS
+==============================================================
+Where AI helped:
+- Surfacing the load-bearing architectural move (side-index + derived pending
+  state) and the cost inversion (summarize per version, fan out pointers only)
+- Stack option analysis with arithmetic (Lambda vs Fargate; virtual threads vs
+  reactive; Little's Law for load-test statistics)
+- Deliverable scoping, 4-hour time budgeting, test-pyramid tiering
+- Scenario-table arithmetic (optimistic/balanced/pessimistic)
+
+Where the user corrected / pushed back:
+- User proposed broader test strategy (Bruno, load tests, frontend E2E);
+  assistant pushed back on frontend/scope and folded the rest into T0/T1/T2
+  tiers with the 1-min constraint corrected (user had said "30-min call")
+- User's three-scenario idea was adopted and formalized into the parameter table
+
+How to guide other engineers using AI here:
+- Use AI for option generation and arithmetic sanity checks, never for final
+  judgment on spec compliance or audit-defensibility tradeoffs
+- Keep the candidate's own voice: rewrite drafts; reviewers probe decisions
+  in live review
+- Feed AI the actual constraints (numbers, hard bounds) — it fills placeholders
+  dangerously fast otherwise (e.g., "$X", firm count)
+
+Where AI should NOT be trusted in this domain:
+- LLM-generated summaries of client-confidential audit workpaper content
+  (hallucinated change descriptions; regulatory indefensibility) — hence the
+  deterministic canonical artifact + LLM-polish-only-display decision
+- Any compliance/residency judgment — AI suggests, the human and contracts decide
+- The user should be able to defend every number in the scenario table without AI

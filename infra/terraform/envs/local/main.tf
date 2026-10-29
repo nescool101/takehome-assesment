@@ -16,6 +16,7 @@ provider "aws" {
   endpoints {
     sqs      = "http://localhost:4566"
     apigateway = "http://localhost:4566"
+    cloudwatch = "http://localhost:4566"
     dynamodb = "http://localhost:4566"
   }
 }
@@ -31,6 +32,7 @@ provider "aws" {
   endpoints {
     sqs      = "http://localhost:4566"
     apigateway = "http://localhost:4566"
+    cloudwatch = "http://localhost:4566"
     dynamodb = "http://localhost:4566"
   }
 }
@@ -46,6 +48,7 @@ provider "aws" {
   endpoints {
     sqs      = "http://localhost:4566"
     apigateway = "http://localhost:4566"
+    cloudwatch = "http://localhost:4566"
     dynamodb = "http://localhost:4566"
   }
 }
@@ -56,16 +59,37 @@ module "us" {
   name      = "us"
 }
 
+module "us_alarms" {
+  source           = "../../modules/alarms"
+  providers        = { aws = aws.us }
+  name             = "us"
+  enable_dashboard = false # LocalStack community rejects PutDashboard
+}
+
 module "eu" {
   source    = "../../modules/queue_registry"
   providers = { aws = aws.eu }
   name      = "eu"
 }
 
+module "eu_alarms" {
+  source           = "../../modules/alarms"
+  providers        = { aws = aws.eu }
+  name             = "eu"
+  enable_dashboard = false
+}
+
 module "ca" {
   source    = "../../modules/queue_registry"
   providers = { aws = aws.ca }
   name      = "ca"
+}
+
+module "ca_alarms" {
+  source           = "../../modules/alarms"
+  providers        = { aws = aws.ca }
+  name             = "ca"
+  enable_dashboard = false
 }
 
 # Gateway in front of the ops API (auth by API key + throttling + quota). One per deployment, not per region.
