@@ -1,0 +1,255 @@
+================================================================================
+CASEWARE TAKE-HOME ARCHITECTURE EXERCISE - CONVERSATION SUMMARY & DECISIONS
+Date: 2026-10-24 | Status: Approach aligned, awaiting "go" to build
+================================================================================
+
+--------------------------------------------------------------------------------
+1. THE TASK (Caseware Staff-level take-home, 4h budget)
+--------------------------------------------------------------------------------
+Design a system that tells audit practitioners which Engagement Files have
+pending Product Template updates, plus a human-readable summary of inbound
+changes, so they can accept/decline.
+
+Scale facts:
+- 4,000 firms, 800,000 active engagement files, 40 products
+- Firm sizes heavily skewed: median ~40 files, largest ~40,000
+- Template updates ~once/week per product (~173 publishes/month fleet-wide)
+- Indicator must appear within SECONDS of publish
+- Engagement load = ~1 minute per file (hard constraint, owned by another team)
+- Template versions BRANCH (markets), get WITHDRAWN, and ACCUMULATE
+  (a firm that declined v5 may later be offered v7 containing v5's changes)
+- Engagement data is client-confidential; EU/Canada residency required
+- Budget: under $X/month (X unspecified), inclusive of AI inference spend
+- All systems live, no maintenance window; must cover EXISTING engagements
+
+Deliverables:
+1. Design document (2-4 pages, PDF or Markdown; diagrams don't count)
+2. Java implementation: template-publish fan-out worker + short README
+3. (Optional) AI-usage notes
+4. Any diagrams
+
+--------------------------------------------------------------------------------
+2. DECISIONS LOCKED IN CLARIFICATION ROUND
+--------------------------------------------------------------------------------
+- Doc format:        Markdown + rendered PDF
+- Budget $X:         3-tier analysis ($2K / $10K / $50K) - defend at $2K tier
+- AI summaries:      Hybrid (deterministic diff rollup + cached LLM narrative,
+                     provenance hashes, numbers never from the LLM)
+- Java stack:        Java 21 + Maven, minimal deps, virtual threads
+- Test depth:        Tests + simulated downstream harness
+- Diagrams:          3 PNGs (system context/ownership, publish fan-out flow,
+                     update lifecycle state machine)
+- AI-usage note:     Short ai-usage-notes.md
+- Packaging:         Organized folder + ready-to-upload .zip
+
+Additional asks from Nestor (beyond the exercise's ask):
+- Local testing via Terraform template creating the AWS components
+- Unit + integration + Bruno API tests consuming the endpoints
+- Load testing simulating the slow downstream call, statistics calibrated to
+  real consumption of the app (the exercise doesn't mention these - we add
+  them deliberately and say so)
+- A frontend "blocker" stub for all-running-apps integration testing
+
+--------------------------------------------------------------------------------
+3. APPROACH DECISIONS (D1-D5)
+--------------------------------------------------------------------------------
+
+D1 - LANGUAGE & RUNTIME: PLAIN JAVA 21, NO SPRING, NO REACTIVE
+----------------------------------------------------------------
+- Java only: scope says "implement one narrow component in Java". Kotlin is
+  off-spec; would read as poor judgment, not fluency.
+- Java 21 (LTS, Corretto/Temurin): records, sealed interfaces, pattern-matching
+  switch, and VIRTUAL THREADS - the deciding feature for ~1-min blocking
+  downstream calls. Note: avoid `synchronized` in hot paths (pinning); use
+  ReentrantLock.
+- No Spring in core: this is a queue consumer, not a web app. Ports & adapters
+  keep the core framework-free; a Spring shell can wrap it at Caseware later.
+- No reactive (Reactor/WebFlux): bottleneck is a ~1-min blocking call with a
+  HARD ceiling (~200 slots). Reactive shines at multiplexing 100K light
+  connections; we need to HOLD BACK to 200. Virtual threads + Semaphore give
+  the same scalability with sequential, provable code.
+- Story: framework choice is reversible; the concurrency & idempotency model
+  is not - that's where effort goes.
+
+D2 - COMPUTE ECONOMICS: SMALL FIXED FARGATE POOL OVER LAMBDA
+----------------------------------------------------------------
+Cost math (us-east-1):
+- Lambda steady state ~$15-25/mo (692K small invocations: 173 publishes/mo
+  x 4,000 tenant packages)
+- Fargate: 6 small tasks (2 per region x 3 regions) ~$107/mo
+Lambda is nominally cheaper, but worker compute is a rounding error vs
+inference + tenant-DB load. Deciding factors all favor Fargate:
+1. Downstream slot discipline - Lambda's instinct is to scale out; reserved
+   concurrency is coarse and per-function. We need a weighted-fair permit pool.
+2. 15-min execution cap - backfill packages run hours; Fargate just runs.
+3. 4,000 tenant DBs - warm connection pools vs constant connect churn.
+4. Stateful leases/fairness live naturally in-process + DynamoDB.
+Side-jobs (reconciliation samplers, withdrawal recompute) can be Lambda later.
+Part 2 core stays deployment-agnostic via ports.
+
+D3 - INFRA: ONE TERRAFORM CODEBASE, TWO TARGETS
+----------------------------------------------------------------
+- Components: SQS work-queue + DLQ (redrive), DynamoDB (offer catalog, package
+  checkpoints/leases), IAM least-privilege, CloudWatch alarms.
+- Same .tf for local & remote: endpoint_url variable -> LocalStack locally,
+  real AWS in dev. tflocal wrapper for LocalStack provider quirks.
+- CDK/Pulumi only if team already standardized; Terraform = AWS-shop default
+  + mature LocalStack story.
+- CI loop: docker compose up localstack -> terraform apply local.tfvars ->
+  run LocalStack-tagged ITs -> destroy. No AWS account needed for PRs.
+
+D4 - TEST STRATEGY (6 LAYERS - added deliberately, exercise doesn't ask)
+----------------------------------------------------------------
+1. Unit (pure core): retry/backoff, circuit breaker, fair permit pool,
+   idempotency - no I/O, milliseconds.
+2. In-JVM integration: full wiring, in-memory adapters + simulated slow
+   downstream; end-to-end invariants.
+3. LocalStack IT (Terraform-provisioned): REAL SQS visibility-timeout/redrive
+   semantics, DynamoDB conditional writes - the things fakes lie about.
+4. Bruno API tests: contract tests on worker ops API (/health,
+   POST /admin/publishes, /admin/offers/{id}/status, /metrics). Git-native
+   .bru files, runs in CI via bruno-cli.
+5. Load simulation: latency-configurable simulated downstream (nominal 60s
+   per brief; degraded profile stretches p99 toward 30 min to prove the
+   permit model degrades gracefully instead of stampeding). Calibrated to
+   real consumption: 4,000 firms / 800K files / median 40 - max 40K skew /
+   ~173 publishes/mo. Outputs: slot utilization, per-tenant completion
+   percentiles, fairness + zero-duplicate assertions.
+6. Frontend stub ("blocker"): one static page - engagement list with
+   pending-update badges + offer detail, wired to ops API -> docker-compose
+   all-apps-up smoke (queue->worker->store->API->UI). Labeled TEST HARNESS,
+   not product.
+
+Core vs scaffolding split (protects the 4h framing):
+- Polished core: worker + tests 1/2/5 + README
+- Delivered scaffolding: Terraform + LocalStack IT + Bruno + UI stub
+
+D5 - OPEN QUESTIONS O1/O2/O3
+----------------------------------------------------------------
+O1 firms/registry volume: 4,000 firms, 800K files -> ETI ~800K rows total
+   (avg 200/firm); ~4,000 work packages per publish, ~692K/mo - trivial for
+   SQS/DynamoDB.
+O2 budget: defend at the $2K/mo tier (steady state lands ~$1-2K/mo, safe
+   under any plausible X). Doc shows 3-tier table + what changes per tier.
+O3 backfill (RISKIEST ASSUMPTION - can firm DBs enumerate engagement IDs
+   cheaply?): decision tree:
+   (a) Manifest/list index exists (most likely - file-list UI needs one)
+       -> backfill as planned: 800K x 1 min = 13,300 slot-min
+          ~2.8 days at 200 slots, weighted-fair per tenant
+          (median firm done in minutes; 40K-file giant can't monopolize)
+   (b) No cheap enumeration -> confirm-on-touch carries coverage (natural
+       opens record template refs at zero cost) + negotiate one-time export
+   (c) Nothing available -> indicator launches for new + opened engagements
+       only; coverage measured publicly; fail-quiet semantics (never a
+       false "pending")
+
+--------------------------------------------------------------------------------
+4. SCENARIO PROFILES (parameterized load/integration tests)
+--------------------------------------------------------------------------------
+Profile      | Estate          | Downstream        | Backfill | IT asserts
+-------------|-----------------|-------------------|----------|------------------
+Optimistic   | 4K firms/800K   | 200 slots, 60s    | ~2.8 d   | SLOs met, fairness,
+             |                 |                   |          | zero dupes
+Balanced     | 6K/1.2M         | 150 slots, p95 90s| ~5.5 d   | coverage ramp OK,
+             |                 |                   |          | breaker quiet
+Pessimistic  | 12K/2.4M        | 50 slots,         | ~67 d -> | no stampede, slots
+             |                 | p99 -> 30 min     | mitig.:  | respected, graceful
+             |                 |                   | active-  | degradation, zero
+             |                 |                   | firm-    | dupes under chaos
+             |                 |                   | first +  | replay
+             |                 |                   | confirm- |
+             |                 |                   | on-touch |
+
+--------------------------------------------------------------------------------
+5. DESIGN DOC CORE IDEAS (Part 1 skeleton)
+--------------------------------------------------------------------------------
+1. ARCHITECTURE & DATA OWNERSHIP
+   - Invert the fan-out: Engagement Template Index (ETI) projection per
+     customer DB: (engagement_id, template_id, version_at_creation,
+     confirmed_version, branch, status, coverage_source, updated_at)
+   - Populated by: create hook, apply/decline hooks, one-time backfill,
+     confirm-on-touch (natural opens)
+   - Publish fan-out = indexed query per tenant; NO engagement loads in the
+     indicator path
+   - Components: Template storage (global, immutable, withdrawal=flag) ->
+     Lineage & Offer Service (offer_id = hash(product, target_version),
+     global Offer Catalog) -> Regional fan-out workers -> tenant DBs own
+     ETI + pending_update + decisions
+   - Residency: global side coordinates by counts/opaque ids; engagement
+     identifiers materialize only in-region
+
+2. CORRECTNESS & PRODUCTION EVOLUTION
+   - Offer = nearest published, non-withdrawn descendant on the engagement's
+     branch; accumulating updates collapse to ONE offer to latest target
+     with cumulative diff summary
+   - "Declined" pins the offer target version only - never suppresses future
+     offers; new offers DISCLOSE "includes changes previously declined in v5"
+     via change-set content-hash comparison
+   - Withdrawal: pending offers recompute to next good descendant (or clear,
+     with audit row)
+   - At-least-once + idempotent effects everywhere; daily publish reconciler
+     polls for missed events; sampled ETI reconciliation
+   - Migration: Phase 0 hooks (dark) -> Phase 1 backfill under granted slot
+     budget -> Phase 2 confirm-on-touch -> Phase 3 per-tenant cutover at
+     >=99% coverage. Fail-quiet until cutover (no false positives)
+   - Failure: leased work packages, crash-safe upserts, circuit breaker, DLQ
+     + replay
+
+3. SCALE / COST / OPS (arithmetic)
+   - Steady state: ~173 publishes/mo, ~3.5M ETI row-touches/mo (trivial),
+     ZERO downstream 1-min calls in steady state
+   - Cost trap avoided: per-engagement LLM summaries = ~$10.5K/mo + weeks of
+     latency; chosen: summaries ONCE per (from,to) version pair, cached
+     globally (<=173/mo)
+   - Steady state ~$1-2K/mo incl. inference (~$400 LLM)
+   - SLOs: indicator p99 <= 60s; base summary p95 <= 15 min; dashboards on
+     fan-out progress, ETI coverage, slot utilization, DLQ depth
+
+4. HUMAN-READABLE SUMMARIES (hybrid)
+   - JSON diff -> deterministic typed+hashed change-unit rollup -> LLM
+     narrative from rollup only -> immutable content-addressed Summary
+     Artifact (diff_manifest_hash, model_id, prompt_version, generated_at)
+   - Rule 1: numbers NEVER from the LLM (rendered from deterministic rollup)
+   - Rule 2: provenance re-derivable (templates immutable; recompute diff
+     and compare) - March summary defensible in November
+   - Per-engagement impact detail: on-demand, one slow load, cached
+   - Eval: golden-diff tests for deterministic layer; rubric eval set for
+     LLM layer (completeness/faithfulness/register/numbers-passthrough);
+     human review for high-traffic pairs
+
+5. TRADEOFFS / ASSUMPTIONS / CHALLENGED REQUIREMENT
+   - CHALLENGE: "within seconds" - split the artifact. Indicator in seconds
+     (cheap, safe, SLO p99 60s); summary NOT in seconds (drags LLM into the
+     publish critical path, unreviewable, costly). Human decision cadence is
+     days -> summary at p95 <= 15 min is operationally instant. Hold seconds
+     SLO for indicator, renegotiate for summary.
+   - RISKIEST: ETI drift (silent wrong indicators on compliance-relevant
+     files) -> coverage metadata on every row, continuous reconciliation,
+     gated cutover. Second: decline-pinning semantics.
+   - LEFT OUT: applying updates + conflict handling, real-time per-engagement
+     impact precompute, workflow/approval engine, multi-region active-active
+     coordinator, template CDN, general versioning framework.
+
+--------------------------------------------------------------------------------
+6. PLAN OF RECORD (pending user "go")
+--------------------------------------------------------------------------------
+1. Java 21, Maven, zero prod deps, virtual threads + fair permit pool,
+   ports/adapters
+2. Fargate-pool deployment story in doc (code stays agnostic); Lambda noted
+   for side-jobs
+3. Single Terraform module (LocalStack local / AWS remote); Bruno collection
+   on ops API
+4. 6-layer test pyramid with 3 load profiles
+5. Design doc: hybrid AI summaries, 3-tier cost defense, "challenge the
+   seconds-SLA" position, O1-O3 answered inside
+
+Build order once confirmed:
+  1. design-doc.md (Part 1)
+  2. 3 diagrams (PNG via Playwright+CSS)
+  3. Java worker (ports, coordinator, fair limiter, retry/breaker,
+     idempotency, simulated downstream)
+  4. Tests: unit + in-JVM integration + LocalStack IT + load harness
+  5. Terraform + Bruno + README + ai-usage-notes
+  6. Render PDF, package folder + zip
+
+================================================================================

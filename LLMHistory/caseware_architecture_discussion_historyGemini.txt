@@ -1,0 +1,76 @@
+================================================================================
+CASEWARE STAFF JAVA DEVELOPER TAKE-HOME: ARCHITECTURE DISCUSSION HISTORY
+================================================================================
+
+--------------------------------------------------------------------------------
+USER PROMPT / CONTEXT SUBMISSION:
+--------------------------------------------------------------------------------
+The user submitted the "Staff_Java_Developer_-_Take-Home_Test 2 (24).pdf" prompt, 
+which outlines the Caseware architecture design challenge:
+- 4,000 firms, 800,000 active engagement files, 40 products.
+- Firm engagement counts skewed: median ~40, largest ~40,000.
+- All-in run cost under $X/month.
+- Template updates published ~1/week/product.
+- Near real-time visibility required.
+- Template updates/branches/withdrawals occur non-linearly.
+- Loading engagement file takes ~1 minute (hard legacy constraint).
+- Summaries must be human-readable and legally defensible over time.
+- Task: Architecture & Design document + Java Fan-Out Worker code.
+
+--------------------------------------------------------------------------------
+1. INITIAL PROPOSED ARCHITECTURE & DATA BREAKDOWN
+--------------------------------------------------------------------------------
+- Core Scale: 4,000 firms, 800k files, median 40, max 40k. ~5.7 publishes/day across products.
+- Core Components:
+  1. Product Template Service & Database (Shared/Global).
+  2. Global Notification / Metadata Index Service (Multi-tenant read-optimized layer in regional DynamoDB/PostgreSQL).
+  3. Asynchronous Fan-Out Worker (Java/Spring Boot).
+  4. LLM / Summarization Engine (generates summaries once per version release, immutably snapshotted).
+- Data Residency: Regional isolation for EU/Canada engagement metadata.
+- Non-Linear Handling: "Declined" state pins target version; aggregate diffs computed relative to active baseline.
+- Java Implementation Details (Part 2 preview): Bounded thread pool / virtual threads, streaming database cursors, DLQ for failures.
+
+--------------------------------------------------------------------------------
+2. SYSTEM BOUNDARIES, RISKS, AND CONCURRENCY CONTROLS
+--------------------------------------------------------------------------------
+- In-Scope:
+  * Event-driven fan-out execution upon template publication.
+  * Async metadata projection update for 800k files.
+  * Immutable snapshotting of human-readable diff summaries.
+  * Data residency regional enforcement.
+- Out-of-Scope:
+  * Actual execution/application of template changes into engagement files.
+  * Frontend UI implementation mechanics.
+  * Deep-diff parsing engine mechanics.
+- Key Risk Scenarios & Mitigations:
+  * Massive Firm Spike (40,000 files): Mitigated by tenant-partitioned queuing and rate-limiting.
+  * Legacy Load (~1 min delay): Decoupled via async background updates to projection table.
+  * Regulatory Defense: Summaries immutably snapshotted at publication time.
+- Concurrency & Throttling Limits:
+  * Worker Pool Concurrency Cap: Max 10-20 concurrent evaluations globally to protect legacy pods.
+  * Retry Policy (`max_attempts`): 3 attempts max with exponential backoff + jitter.
+  * Dead Letter Queue (DLQ): Failures offloaded after 3 attempts.
+
+--------------------------------------------------------------------------------
+3. TECH STACK, FRAMEWORK, AND COMPUTE DECISIONS
+--------------------------------------------------------------------------------
+- Language & Framework: Java 21 (LTS) with Spring Boot.
+- Concurrency Model: Virtual Threads (Project Loom via `Executors.newVirtualThreadPerTaskExecutor()`) over Reactive/WebFlux for simple, non-blocking synchronous style.
+- Compute / Host: AWS ECS (Fargate or EC2) microservices with SQS integration instead of AWS Lambda (due to Lambda's 15-minute max execution timeout constraint).
+- Infrastructure as Code (IaC): Terraform for remote AWS provisioning; LocalStack for local AWS service mocking.
+
+--------------------------------------------------------------------------------
+4. FULL TESTING & INFRASTRUCTURE VALIDATION STRATEGY
+--------------------------------------------------------------------------------
+1. Local Infrastructure Simulation:
+   - Terraform scripts pointing to a local LocalStack container (SQS, SNS, DynamoDB, ECS).
+2. Testing Pyramid:
+   - Unit & Integration Tests: JUnit 5 + Testcontainers (real Postgres/DynamoDB containers).
+   - API Testing: Bruno / Postman collections for endpoint contract testing.
+   - Load & Latency Simulation: k6 or Gatling tests using mock 60-second latency stubs to test backpressure under 40,000-file firm loads.
+3. Full-Stack End-to-End Testing:
+   - Playwright / Cypress smoke test validating the complete vertical slice: Frontend Dashboard -> API Gateway -> Fan-Out Worker -> Projection Store -> Legacy Mock.
+
+================================================================================
+END OF ARCHITECTURE DISCUSSION HISTORY
+================================================================================
