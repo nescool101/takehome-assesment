@@ -2,6 +2,7 @@ package com.caseware.fanout.worker;
 
 import java.util.function.LongSupplier;
 
+
 /**
  * Opens after N consecutive failures for a cooldown; protects the other team's service. State lives in a
  * {@link BreakerStore} so all workers of a region trip and recover together. Reads are cached for {@code refreshMs};

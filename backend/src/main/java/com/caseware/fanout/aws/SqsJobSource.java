@@ -9,6 +9,7 @@ import java.util.Map;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.*;
 
+
 /** JobSource over SQS. The worker owns the attempt count (message attribute), not ReceiveCount. */
 public class SqsJobSource implements JobSource {
     private static final String ATTEMPT = "attempt";

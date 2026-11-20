@@ -16,6 +16,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.QueueAttributeName;
 
+
 /**
  * Ops API on the JDK HttpServer. Offer id = "templateId@version".
  * Published jobs live in the registry table, decisions in the decisions table: nothing is held in process memory.
