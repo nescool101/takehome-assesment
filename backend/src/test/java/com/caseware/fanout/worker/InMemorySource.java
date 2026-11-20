@@ -4,6 +4,7 @@ import com.caseware.fanout.worker.Ports.*;
 import java.time.Duration;
 import java.util.*;
 
+
 /** Test double with SQS-like semantics: visibility delays, in-flight tracking, DLQ. */
 class InMemorySource implements JobSource {
     private record Entry(Job job, int failures, long visibleAtMs) {}

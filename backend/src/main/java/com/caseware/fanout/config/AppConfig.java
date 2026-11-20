@@ -19,6 +19,7 @@ public record AppConfig(
         long breakerCooldownMs,
         long deferDelayMs) {
 
+
     public static AppConfig fromEnv() {
         return from(System.getenv());
     }

@@ -8,6 +8,7 @@ import java.util.UUID;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.*;
 
+
 /** Table: hash key "k" (S). begin() is one conditional put, so only one worker wins a key. */
 public class DynamoIdempotency implements IdempotencyStore {
     private final DynamoDbClient ddb;
